@@ -73,10 +73,13 @@ app.register_blueprint(admissions_bp)
 
 @app.context_processor
 def inject_unread_count():
-    if current_user.is_authenticated:
-        db = get_db()
-        count = db.execute('SELECT COUNT(*) FROM messages WHERE recipient_id = ? AND is_read = 0', (current_user.id,)).fetchone()[0]
-        return dict(unread_messages_count=count)
+    try:
+        if current_user.is_authenticated:
+            db = get_db()
+            count = db.execute('SELECT COUNT(*) FROM messages WHERE recipient_id = ? AND is_read = 0', (current_user.id,)).fetchone()[0]
+            return dict(unread_messages_count=count)
+    except Exception as e:
+        print(f"Context processor error: {e}")
     return dict(unread_messages_count=0)
 
 from datetime import datetime
@@ -132,7 +135,11 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def internal_server_error(e):
-    return render_template('500.html'), 500
+    # Try to render custom template, but fallback to readable error if it fails
+    try:
+        return render_template('500.html'), 500
+    except Exception as render_err:
+        return f"500 Internal Server Error: {str(e)} (Context Error: {str(render_err)})", 500
 
 def seed_demo_data(db):
     """Populates the database with sample data if it's empty."""
