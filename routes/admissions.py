@@ -63,7 +63,7 @@ def enroll():
             db.commit()
             
             # 3. Send Email
-            from app import mail
+            from extensions import mail
             msg = Message(
                 'Welcome to Student OS - Your Login Credentials',
                 recipients=[email]

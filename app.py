@@ -16,10 +16,10 @@ from routes.courses import courses_bp
 from routes.academic import academic_bp
 from routes.messages import messages_bp
 from routes.admissions import admissions_bp
-from flask_mail import Mail
-from flask_babel import Babel, _
+from flask_mail import Message
+from flask_babel import _
 from flask import session, request
-from flask_wtf.csrf import CSRFProtect
+from extensions import mail, babel, csrf, login_manager
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
@@ -37,12 +37,13 @@ app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
 
-mail = Mail(app)
+# Extensions Setup
+mail.init_app(app)
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Auth Setup
-login_manager = LoginManager(app)
+login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
 
 @login_manager.user_loader
@@ -56,8 +57,8 @@ def get_locale():
     # Fallback to the best match from the browser languages
     return request.accept_languages.best_match(['en', 'hi', 'bn', 'te', 'mr', 'ta', 'gu', 'kn', 'ml'])
 
-babel = Babel(app, locale_selector=get_locale)
-csrf = CSRFProtect(app)
+babel.init_app(app, locale_selector=get_locale)
+csrf.init_app(app)
 
 # Teardown
 app.teardown_appcontext(close_connection)
