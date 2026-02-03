@@ -133,6 +133,68 @@ def page_not_found(e):
 def internal_server_error(e):
     return render_template('500.html'), 500
 
+def seed_demo_data(db):
+    """Populates the database with sample data if it's empty."""
+    print("Seeding demo data...")
+    import random
+    
+    # 1. Create Teachers
+    teachers = [
+        ('mr_smith', 'password', 'Sarah Smith'),
+        ('ms_jones', 'password', 'Emily Jones'),
+        ('dr_brown', 'password', 'Michael Brown')
+    ]
+    
+    teacher_ids = []
+    for username, pwd, name in teachers:
+        cursor = db.execute('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+                   (username, generate_password_hash(pwd), 'teacher'))
+        teacher_ids.append(cursor.lastrowid)
+
+    # 2. Create Courses
+    courses = [
+        ('Mathematics 101', teacher_ids[0], 'Mon/Wed 10:00 AM'),
+        ('History 201', teacher_ids[1], 'Tue/Thu 2:00 PM'),
+        ('Computer Science', teacher_ids[2], 'Fri 1:00 PM')
+    ]
+    
+    course_ids = []
+    for name, t_id, schedule in courses:
+        cursor = db.execute('INSERT INTO courses (name, teacher_id, schedule) VALUES (?, ?, ?)',
+                          (name, t_id, schedule))
+        course_ids.append(cursor.lastrowid)
+
+    # 3. Create Students
+    students_data = [
+        ('alice', 'Alice Johnson', 'alice@example.com'),
+        ('bob', 'Bob Wilson', 'bob@example.com'),
+        ('charlie', 'Charlie Davis', 'charlie@example.com'),
+        ('david', 'David Miller', 'david@example.com')
+    ]
+    
+    for i, (username, name, email) in enumerate(students_data):
+        pwd_hash = generate_password_hash('password')
+        cursor = db.execute('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+                   (username, pwd_hash, 'student'))
+        user_id = cursor.lastrowid
+        
+        # Details
+        db.execute('''INSERT INTO student_details 
+            (user_id, full_name, email, admission_number, gender) 
+            VALUES (?, ?, ?, ?, ?)''',
+            (user_id, name, email, f"ADM{user_id:04d}", random.choice(['Male', 'Female'])))
+        
+        # Random Enrollments (Each student in 2 courses)
+        for c_id in random.sample(course_ids, 2):
+            db.execute('INSERT INTO enrollments (student_id, course_id) VALUES (?, ?)', (user_id, c_id))
+            
+            # Add some sample grades
+            db.execute('INSERT INTO grades (student_id, course_id, score, grade_type) VALUES (?, ?, ?, ?)',
+                       (user_id, c_id, random.randint(75, 98), 'Assignment'))
+    
+    db.commit()
+    print("Demo data seeded successfully.")
+
 # Initialize DB structure and default data on startup (Required for Render/Gunicorn)
 with app.app_context():
     # Create tables
@@ -153,6 +215,10 @@ with app.app_context():
             db.commit()
     except Exception as e:
         print(f"Group chat setup warning: {e}")
+
+    # NEW: Auto-seed if database has no students
+    if not db.execute('SELECT 1 FROM users WHERE role = ?', ('student',)).fetchone():
+        seed_demo_data(db)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
