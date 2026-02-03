@@ -133,25 +133,27 @@ def page_not_found(e):
 def internal_server_error(e):
     return render_template('500.html'), 500
 
-if __name__ == '__main__':
-    # Initialize DB modularly
+# Initialize DB structure and default data on startup (Required for Render/Gunicorn)
+with app.app_context():
+    # Create tables
     init_db(app)
     
-    with app.app_context():
-        db = get_db()
-        # Create default admin if not exists
-        if not db.execute('SELECT * FROM users WHERE username = ?', ('admin',)).fetchone():
-            db.execute('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-                       ('admin', generate_password_hash('admin123'), 'admin'))
+    db = get_db()
+    
+    # Create default admin if not exists
+    if not db.execute('SELECT * FROM users WHERE username = ?', ('admin',)).fetchone():
+        db.execute('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+                   ('admin', generate_password_hash('admin123'), 'admin'))
+        db.commit()
+
+    # Create Group Chat system user (ID 0)
+    try:
+        if not db.execute('SELECT * FROM users WHERE id = 0').fetchone():
+            db.execute("INSERT INTO users (id, username, password_hash, role) VALUES (0, 'Group Chat', 'system', 'group')")
             db.commit()
+    except Exception as e:
+        print(f"Group chat setup warning: {e}")
 
-        # Create Group Chat system user (ID 0) to satisfy FK constraints
-        try:
-            if not db.execute('SELECT * FROM users WHERE id = 0').fetchone():
-                db.execute("INSERT INTO users (id, username, password_hash, role) VALUES (0, 'Group Chat', 'system', 'group')")
-                db.commit()
-        except Exception as e:
-            print(f"Group chat setup warning: {e}")
-
+if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
 
