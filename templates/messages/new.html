@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+        <div class="header" style="margin-bottom: 3rem;">
+            <div>
+                <a href="{{ url_for('messages.inbox') }}" class="back-link">
+                    <i data-lucide="arrow-left" width="14"></i> Back to Inbox
+                </a>
+                <h1 style="font-size: 2.25rem; font-weight: 800; letter-spacing: -0.025em; margin-top: 0.5rem;">New
+                    Message</h1>
+                <p style="color: var(--text-muted);">Choose someone to start a conversation with.</p>
+            </div>
+        </div>
+
+        <div class="stat-card" style="padding: 1.5rem;">
+            <div class="user-grid">
+                {% if not users %}
+                <p style="text-align: center; color: var(--text-muted); padding: 2rem;">No other users found.</p>
+                {% else %}
+                {% for u in users %}
+                <a href="{{ url_for('messages.chat', other_user_id=u.id) }}" class="user-item">
+                    <div class="avatar-sm"
+                        style="background: var(--bg-color); color: var(--primary-color); border: 1px solid var(--border-color);">
+                        {{ u.username[0]|upper }}
+                    </div>
+                    <div class="user-item-info">
+                        <div class="user-item-name">{{ u.username }}</div>
+                        <div
+                            class="badge {{ 'badge-indigo' if u.role == 'teacher' else 'badge-success' if u.role == 'student' else 'badge-error' }}">
+                            {{ u.role.capitalize() }}
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" width="16" style="color: var(--text-muted); margin-left: auto;"></i>
+                </a>
+                {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+    .user-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+    }
+
+    .user-item {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        background: var(--bg-color);
+        border-radius: 1rem;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    .user-item:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .user-item-info {
+        margin-left: 1.25rem;
+    }
+
+    .user-item-name {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+</style>
+{% endblock %}

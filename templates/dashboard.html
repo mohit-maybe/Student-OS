@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+        <div class="header">
+            <div>
+                <span class="header-pretitle">Overview & Analytics</span>
+                <h1 class="header-title">Welcome back, {{ user.username }}</h1>
+                <p style="color: var(--text-muted); margin-top: 0.75rem; font-weight: 500; font-size: 1.1rem;">
+                    You are currently managing <b>{{ stats.card2_value }}</b> {{ stats.card2_label | lower }} with a
+                    system status of <span style="color: var(--success-color); font-weight: 800;">OPTIMAL</span>.
+                </p>
+            </div>
+            <div class="user-pill staggered-entry">
+                <div class="avatar-sm">
+                    {{ user.username[0]|upper }}
+                </div>
+                <span style="font-weight: 700; color: var(--text-main);">{{ user.role | capitalize }}</span>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i data-lucide="award" style="width: 16px; margin-right: 0.5rem;"></i>
+                    {{ stats.card1_label }}
+                </div>
+                <div class="stat-value">{{ stats.card1_value }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i data-lucide="book-open" style="width: 16px; margin-right: 0.5rem;"></i>
+                    {{ stats.card2_label }}
+                </div>
+                <div class="stat-value">{{ stats.card2_value }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i data-lucide="calendar-check" style="width: 16px; margin-right: 0.5rem;"></i>
+                    {{ stats.card3_label }}
+                </div>
+                <div class="stat-value">{{ stats.card3_value }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i data-lucide="check-circle" style="width: 16px; margin-right: 0.5rem;"></i>
+                    {{ stats.card4_label }}
+                </div>
+                <div class="stat-value" style="color: var(--success-color);">{{ stats.card4_value }}</div>
+            </div>
+        </div>
+
+        <div class="stats-grid stagger-container" style="grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));">
+            <div class="stat-card">
+                <h3>Performance Overview</h3>
+                <div style="height: 300px;">
+                    <canvas id="gradeChart"></canvas>
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>Attendance Distribution</h3>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="attendanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid stagger-container" style="margin-top: 1.5rem;">
+            <div class="stat-card">
+                <h3>Recent Activity</h3>
+                {% if not recent_activity %}
+                <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    <i data-lucide="inbox" width="32" style="margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                    <p>No recent activity to show.</p>
+                </div>
+                {% else %}
+                <div class="table-container" style="margin-top: 1rem;">
+                    <table>
+                        <tbody>
+                            {% for item in recent_activity %}
+                            <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <div
+                                            style="width: 8px; height: 8px; border-radius: 50%; background: var(--primary-color); animation: pulse 2s infinite;">
+                                        </div>
+                                        <div>
+                                            {% if user.role == 'student' %}
+                                            <span style="font-weight: 500;">{{ item.title }}</span> in {{
+                                            item.course_name }}
+                                            {% else %}
+                                            <span style="font-weight: 500;">{{ item.student_name }}</span> submitted {{
+                                            item.assignment_title }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td style="text-align: right; color: var(--text-muted); font-size: 0.875rem;">
+                                    {{ (item.due_date if user.role == 'student' else item.submission_date) | pretty_date
+                                    }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="stat-card">
+                <h3>System Notifications</h3>
+                {% if not notifications %}
+                <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    <i data-lucide="bell-off" width="32" style="margin-bottom: 0.5rem; opacity: 0.3;"></i>
+                    <p>No new notifications.</p>
+                </div>
+                {% else %}
+                <div class="notification-list" style="margin-top: 1rem;">
+                    {% for n in notifications %}
+                    <div class="notification-item">
+                        <div class="n-icon {% if n.type == 'success' %}success{% else %}info{% endif %}">
+                            <i data-lucide="{% if n.type == 'success' %}check-circle{% else %}info{% endif %}"
+                                width="18"></i>
+                        </div>
+                        <div>
+                            <p class="n-message">{{ n.message }}</p>
+                            <span class="n-time">{{ n.created_at | pretty_date }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <style>
+                    @keyframes pulse {
+                        0% {
+                            transform: scale(1);
+                            opacity: 1;
+                            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+                        }
+
+                        70% {
+                            transform: scale(1.2);
+                            opacity: 0.6;
+                            box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+                        }
+
+                        100% {
+                            transform: scale(1);
+                            opacity: 1;
+                            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+                        }
+                    }
+                </style>
+
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const chartData = JSON.parse('{{ chart_data | tojson | safe }}');
+
+    // Common chart options
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+            duration: 2000,
+            easing: 'easeOutQuart'
+        },
+        plugins: {
+            legend: {
+                labels: {
+                    color: getComputedStyle(document.documentElement).getPropertyValue('--text-muted'),
+                    font: { family: 'Inter', size: 12 }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: getComputedStyle(document.documentElement).getPropertyValue('--border-color'),
+                    drawBorder: false
+                },
+                ticks: {
+                    color: getComputedStyle(document.documentElement).getPropertyValue('--text-muted')
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                },
+                ticks: {
+                    color: getComputedStyle(document.documentElement).getPropertyValue('--text-muted')
+                }
+            }
+        }
+    };
+
+    // Grade Chart
+    new Chart(document.getElementById('gradeChart'), {
+        type: 'bar',
+        data: {
+            labels: chartData.grade_labels,
+            datasets: [{
+                label: 'Average Score',
+                data: chartData.grade_values,
+                backgroundColor: 'rgba(90, 103, 216, 0.6)',
+                hoverBackgroundColor: 'rgba(90, 103, 216, 0.8)',
+                borderWidth: 0,
+                borderRadius: 12
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                ...commonOptions.plugins,
+                legend: { display: false }
+            }
+        }
+    });
+
+    // Attendance Chart
+    const totalAttendance = chartData.attendance_values.reduce((a, b) => a + b, 0);
+    const presentRate = totalAttendance > 0
+        ? Math.round((chartData.attendance_values[0] / totalAttendance) * 100)
+        : 0;
+
+    // Status text based on percentage
+    let statusText = "Stable";
+    let statusColor = getComputedStyle(document.documentElement).getPropertyValue('--text-main');
+    if (presentRate >= 90) { statusText = "On Track"; statusColor = "#48bb78"; }
+    else if (presentRate < 75) { statusText = "Review"; statusColor = "#f56565"; }
+
+    const ctxAtt = document.getElementById('attendanceChart').getContext('2d');
+
+    // Create Gradients
+    const gradPresent = ctxAtt.createLinearGradient(0, 0, 0, 400);
+    gradPresent.addColorStop(0, 'rgba(72, 187, 120, 0.8)');
+    gradPresent.addColorStop(1, 'rgba(72, 187, 120, 0.4)');
+
+    const gradAbsent = ctxAtt.createLinearGradient(0, 0, 0, 400);
+    gradAbsent.addColorStop(0, 'rgba(245, 101, 101, 0.8)');
+    gradAbsent.addColorStop(1, 'rgba(245, 101, 101, 0.4)');
+
+    const gradLate = ctxAtt.createLinearGradient(0, 0, 0, 400);
+    gradLate.addColorStop(0, 'rgba(237, 137, 54, 0.8)');
+    gradLate.addColorStop(1, 'rgba(237, 137, 54, 0.4)');
+
+    new Chart(ctxAtt, {
+        type: 'doughnut',
+        data: {
+            labels: chartData.attendance_labels,
+            datasets: [{
+                data: chartData.attendance_values,
+                backgroundColor: [gradPresent, gradAbsent, gradLate],
+                hoverBackgroundColor: [
+                    'rgba(72, 187, 120, 1)',
+                    'rgba(245, 101, 101, 1)',
+                    'rgba(237, 137, 54, 1)'
+                ],
+                borderWidth: 0,
+                hoverOffset: 20,
+                borderRadius: 10,
+                spacing: 5
+            }]
+        },
+        options: {
+            ...commonOptions,
+            cutout: '85%',
+            plugins: {
+                ...commonOptions.plugins,
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 30,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-main'),
+                        font: { size: 12, weight: '600' }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: { size: 14, weight: '700' },
+                    bodyFont: { size: 13 },
+                    displayColors: true,
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1
+                }
+            },
+            layout: { padding: 20 },
+            scales: { x: { display: false }, y: { display: false } }
+        },
+        plugins: [{
+            id: 'centerText',
+            beforeDraw: function (chart) {
+                const width = chart.width, height = chart.height, ctx = chart.ctx;
+                ctx.restore();
+
+                // Draw Percentage
+                ctx.font = `800 2.5em Inter`;
+                ctx.textBaseline = "middle";
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-main');
+                const text = presentRate + "%",
+                    textX = Math.round((width - ctx.measureText(text).width) / 2),
+                    textY = height / 2 - 15;
+                ctx.fillText(text, textX, textY);
+
+                // Draw Status Text
+                ctx.font = `700 0.85em Inter`;
+                ctx.fillStyle = statusColor;
+                const subText = statusText.toUpperCase(),
+                    subX = Math.round((width - ctx.measureText(subText).width) / 2),
+                    subY = height / 2 + 20;
+                ctx.fillText(subText, subX, subY);
+                ctx.save();
+            }
+        }]
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,153 @@
+# Translations template for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-01-28 19:14+0530\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: routes/dashboard.py:66
+msgid "Current GPA"
+msgstr ""
+
+#: routes/dashboard.py:67
+msgid "Total Courses"
+msgstr ""
+
+#: routes/dashboard.py:68
+msgid "Attendance Rate"
+msgstr ""
+
+#: routes/dashboard.py:69 routes/dashboard.py:115
+msgid "Status"
+msgstr ""
+
+#: routes/dashboard.py:69
+msgid "Academic Honor"
+msgstr ""
+
+#: routes/dashboard.py:69
+msgid "Active"
+msgstr ""
+
+#: routes/dashboard.py:112
+msgid "Class Average"
+msgstr ""
+
+#: routes/dashboard.py:113
+msgid "My Courses"
+msgstr ""
+
+#: routes/dashboard.py:114
+msgid "Total Students"
+msgstr ""
+
+#: routes/dashboard.py:115
+msgid "Teacher Profile"
+msgstr ""
+
+#: routes/dashboard.py:130
+msgid "System"
+msgstr ""
+
+#: routes/dashboard.py:130
+msgid "Online"
+msgstr ""
+
+#: routes/dashboard.py:131
+msgid "Users"
+msgstr ""
+
+#: routes/dashboard.py:132 templates/sidebar.html:34
+msgid "Courses"
+msgstr ""
+
+#: routes/dashboard.py:133
+msgid "Role"
+msgstr ""
+
+#: templates/settings.html:10
+msgid "System Preferences"
+msgstr ""
+
+#: templates/settings.html:11 templates/sidebar.html:76
+msgid "Settings"
+msgstr ""
+
+#: templates/settings.html:30
+msgid "Language & Region"
+msgstr ""
+
+#: templates/settings.html:31
+msgid ""
+"Change the application language to\n"
+"                            your preference."
+msgstr ""
+
+#: templates/settings.html:66
+msgid "Appearance"
+msgstr ""
+
+#: templates/settings.html:69
+msgid ""
+"Customize how\n"
+"                    Student OS looks on your device."
+msgstr ""
+
+#: templates/settings.html:74 templates/sidebar.html:87
+msgid "Dark Mode"
+msgstr ""
+
+#: templates/settings.html:90
+msgid "Notifications"
+msgstr ""
+
+#: templates/settings.html:93
+msgid ""
+"Manage how you\n"
+"                    receive alerts and updates."
+msgstr ""
+
+#: templates/settings.html:96
+msgid "Configure Notifications"
+msgstr ""
+
+#: templates/sidebar.html:18
+msgid "Dashboard"
+msgstr ""
+
+#: templates/sidebar.html:26
+msgid "Admission"
+msgstr ""
+
+#: templates/sidebar.html:41
+msgid "Grades"
+msgstr ""
+
+#: templates/sidebar.html:48
+msgid "Attendance"
+msgstr ""
+
+#: templates/sidebar.html:54
+msgid "Messages"
+msgstr ""
+
+#: templates/sidebar.html:69
+msgid "Profile"
+msgstr ""
+
+#: templates/sidebar.html:98
+msgid "Sign Out"
+msgstr ""
+

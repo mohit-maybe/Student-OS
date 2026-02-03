@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+        <div class="header">
+            <div>
+                <a href="{{ url_for('courses.course_details', course_id=course.id) }}"
+                    style="color: var(--text-muted); text-decoration: none; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <i data-lucide="arrow-left" width="16"></i> Back to Course
+                </a>
+                <h2>Grading: {{ assignment.title }}</h2>
+                <p style="color: var(--text-muted)">{{ submissions|length }} / {{ total_students }} Submissions</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            {% if not submissions %}
+            <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                No submissions yet.
+            </div>
+            {% else %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Submission Date</th>
+                        <th>Content</th>
+                        <th>Grade / Feedback</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sub in submissions %}
+                    <tr>
+                        <td style="vertical-align: top; padding-top: 1.5rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div
+                                    style="width: 36px; height: 36px; background: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem;">
+                                    {{ sub.student_name[0]|upper }}
+                                </div>
+                                <div style="font-weight: 500;">{{ sub.student_name }}</div>
+                            </div>
+                        </td>
+                        <td
+                            style="vertical-align: top; padding-top: 1.5rem; color: var(--text-muted); font-size: 0.875rem;">
+                            {{ sub.submission_date | pretty_date }}
+                        </td>
+                        <td style="vertical-align: top; padding-top: 1rem;">
+                            <div
+                                style="max-width: 320px; max-height: 154px; overflow-y: auto; background: var(--bg-color); padding: 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-color); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                                {{ sub.content | safe }}
+                            </div>
+                            {% if sub.attachment_path %}
+                            <a href="{{ url_for('academic.uploaded_file', filename=sub.attachment_path) }}"
+                                target="_blank"
+                                style="color: var(--primary-color); font-size: 0.8rem; text-decoration: none; display: flex; align-items: center; gap: 0.25rem; font-weight: 500;">
+                                <i data-lucide="download" width="14"></i> Download Attachment
+                            </a>
+                            {% endif %}
+                        </td>
+                        <form
+                            action="{{ url_for('academic.grade_submission', assignment_id=assignment.id, submission_id=sub.id) }}"
+                            method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <td style="vertical-align: top; padding-top: 1rem;">
+                                <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 220px;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="number" name="grade" placeholder="Score"
+                                            value="{{ sub.grade if sub.grade else '' }}"
+                                            style="width: 100%; height: 38px;" class="form-input" min="0" max="100"
+                                            step="0.1">
+                                        <span style="color: var(--text-muted); font-size: 0.875rem;">/100</span>
+                                    </div>
+                                    <textarea name="feedback" placeholder="Leave feedback..." class="form-input"
+                                        style="font-size: 0.875rem; height: 80px; resize: vertical; padding: 0.5rem;">{{ sub.feedback if sub.feedback else '' }}</textarea>
+                                </div>
+                            </td>
+                            <td style="vertical-align: top; padding-top: 1rem;">
+                                <button type="submit" class="btn-primary"
+                                    style="padding: 0.6rem 1rem; width: auto;">Save Grade</button>
+                            </td>
+                        </form>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+    </main>
+</div>
+{% endblock %}

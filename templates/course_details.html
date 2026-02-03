@@ -1,0 +1,603 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+        <div class="header" style="align-items: flex-end; margin-bottom: 3rem;">
+            <div>
+                <a href="{{ url_for('courses.courses') }}" class="back-link">
+                    <i data-lucide="arrow-left" width="14"></i> Back to Catalog
+                </a>
+                <h1 style="font-size: 2.25rem; font-weight: 800; letter-spacing: -0.025em; margin-top: 0.5rem;">{{
+                    course.name }}</h1>
+                <div class="meta-item" style="margin-top: 0.5rem;">
+                    <i data-lucide="clock" width="14"></i>
+                    <span>{{ course.schedule if course.schedule else 'Flexible Schedule' }}</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                {% if user.role == 'teacher' %}
+                <a href="{{ url_for('courses.new_assignment', course_id=course.id) }}" class="btn-primary"
+                    style="width: auto; text-decoration: none; padding: 0.75rem 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i data-lucide="plus-square" width="18"></i> Post Assignment
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="stat-card" style="margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3>Assignments</h3>
+                {% if user.role == 'teacher' %}
+                <a href="{{ url_for('courses.new_assignment', course_id=course.id) }}" class="btn-primary"
+                    style="width: auto; text-decoration: none; font-size: 0.875rem;">+ New Assignment</a>
+                {% endif %}
+            </div>
+
+            {# Fetch assignments in the route logic later, for now placeholder or query in template if allowed (not
+            recommended usually but okay for rapid proto) #}
+            {# Ideally we should pass 'assignments' from the route. I will update the route next. #}
+
+            {% if not assignments %}
+            <div style="text-align: center; padding: 4rem 2rem; color: var(--text-muted);">
+                <i data-lucide="clipboard-list" width="48" height="48" style="margin-bottom: 1rem; opacity: 0.2;"></i>
+                <p>No assignments have been posted yet.</p>
+            </div>
+            {% else %}
+            <div class="table-container" style="border: none; box-shadow: none;">
+                <table style="border-collapse: separate; border-spacing: 0 0.75rem;">
+                    <thead>
+                        <tr style="background: transparent;">
+                            <th style="border: none; padding-bottom: 0.5rem;">Assignment</th>
+                            <th style="border: none; padding-bottom: 0.5rem;">Deadline</th>
+                            <th style="text-align: right; border: none; padding-bottom: 0.5rem;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in assignments %}
+                        <tr class="staggered-entry"
+                            style="background: var(--card-bg); border-radius: 1rem; transition: transform 0.2s ease;">
+                            <td
+                                style="padding: 1rem; border: 1px solid var(--border-color); border-right: none; border-radius: 1rem 0 0 1rem;">
+                                <div style="font-weight: 800; color: var(--text-main); font-size: 1.05rem;">{{
+                                    assignment.title }}</div>
+                                {% if assignment.attachment_path %}
+                                <a href="{{ url_for('academic.uploaded_file', filename=assignment.attachment_path) }}"
+                                    target="_blank"
+                                    style="font-size: 0.75rem; display: flex; align-items: center; gap: 0.35rem; color: var(--primary-color); text-decoration: none; margin-top: 0.5rem; font-weight: 600;">
+                                    <i data-lucide="paperclip" width="14"></i> View Material
+                                </a>
+                                {% endif %}
+                            </td>
+                            <td
+                                style="padding: 1rem; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+                                <div class="meta-item" style="font-weight: 600; color: var(--text-muted);">
+                                    <i data-lucide="calendar" width="16" style="color: var(--primary-color);"></i>
+                                    <span>{{ assignment.due_date | pretty_date if assignment.due_date else 'Flexible'
+                                        }}</span>
+                                </div>
+                            </td>
+                            <td
+                                style="text-align: right; padding: 1rem; border: 1px solid var(--border-color); border-left: none; border-radius: 0 1rem 1rem 0;">
+                                {% if user.role == 'student' %}
+                                <a href="{{ url_for('courses.submit_assignment', course_id=course.id, assignment_id=assignment.id) }}"
+                                    class="btn-primary"
+                                    style="padding: 0.6rem 1.25rem; font-size: 0.825rem; text-decoration: none; width: auto; display: inline-flex; border-radius: 0.75rem;">Submit
+                                    Work</a>
+                                {% else %}
+                                <a href="{{ url_for('academic.view_submissions', assignment_id=assignment.id) }}"
+                                    class="btn-primary"
+                                    style="padding: 0.6rem 1.25rem; font-size: 0.825rem; text-decoration: none; width: auto; display: inline-flex; background: var(--secondary-color); border-radius: 0.75rem;">Review
+                                    Grades</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="stat-card" style="margin-bottom: 2rem;">
+            <h3>Class Roster</h3>
+            <p style="color: var(--text-muted); font-size: 0.875rem;">Total Students: {{ students|length }}</p>
+
+            {% if not students %}
+            <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                No students enrolled in this course yet.
+            </div>
+            {% endif %}
+
+            {% if user.role in ['teacher', 'admin'] %}
+            <div
+                style="background: linear-gradient(135deg, var(--bg-color), rgba(99, 102, 241, 0.05)); padding: 2rem; border-radius: 1.5rem; border: 1px solid var(--border-color); margin-bottom: 2.5rem; position: relative;">
+                <div
+                    style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: var(--primary-light); border-radius: 50%; filter: blur(40px); opacity: 0.5;">
+                </div>
+                <h4 style="margin-bottom: 1.5rem; font-size: 1.1rem; display: flex; align-items: center; gap: 0.75rem;">
+                    <i data-lucide="user-plus" style="color: var(--primary-color);"></i>
+                    Enroll New Student
+                </h4>
+                <form id="enrollment-form" action="{{ url_for('courses.enroll_student', course_id=course.id) }}"
+                    method="POST"
+                    style="display: flex; gap: 1rem; align-items: flex-end; position: relative; z-index: 2;"
+                    onsubmit="return validateEnrollment()">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group" style="margin-bottom: 0; flex: 1; position: relative;">
+                        <label
+                            style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.5rem; display: block; font-weight: 700;">Select
+                            Student by Name or Username</label>
+                        <div class="search-wrapper" style="width: 100%; position: relative;">
+                            <i data-lucide="search" class="search-icon" style="left: 1rem; width: 18px;"></i>
+                            <input type="text" id="student-search-input" name="username_display" class="search-input"
+                                placeholder="Start typing name or username..." autocomplete="off"
+                                style="width: 100%; height: 50px; padding-left: 3rem; border-radius: 1rem; background: var(--card-bg);">
+                            <input type="hidden" id="student-username-hidden" name="username">
+
+                            <!-- Custom Suggestions Dropdown -->
+                            <div id="suggestions-dropdown" class="suggestions-dropdown" style="display: none;">
+                                <!-- Items will be injected here by JS -->
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" style="height: 50px; padding: 0 2.5rem;">
+                        <i data-lucide="check" width="20" style="margin-right: 8px;"></i>
+                        Enroll Now
+                    </button>
+                </form>
+            </div>
+
+            <style>
+                .suggestions-dropdown {
+                    position: absolute;
+                    top: calc(100% + 8px);
+                    left: 0;
+                    right: 0;
+                    background: var(--card-bg);
+                    backdrop-filter: blur(20px);
+                    border: 1px solid var(--border-color);
+                    border-radius: 1rem;
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+                    z-index: 1000;
+                    max-height: 300px;
+                    overflow-y: auto;
+                    padding: 0.5rem;
+                }
+
+                .suggestion-item {
+                    padding: 0.75rem 1rem;
+                    border-radius: 0.75rem;
+                    cursor: pointer;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.125rem;
+                    transition: all 0.2s;
+                    border: 1px solid transparent;
+                }
+
+                .suggestion-item:hover,
+                .suggestion-item.active {
+                    background: var(--primary-light);
+                    border-color: var(--primary-color);
+                    transform: translateX(4px);
+                }
+
+                .suggestion-name {
+                    font-weight: 700;
+                    color: var(--text-main);
+                    font-size: 0.95rem;
+                }
+
+                .suggestion-username {
+                    font-size: 0.75rem;
+                    color: var(--text-muted);
+                    font-weight: 600;
+                }
+
+                .no-suggestions {
+                    padding: 1rem;
+                    text-align: center;
+                    color: var(--text-muted);
+                    font-style: italic;
+                    font-size: 0.9rem;
+                }
+            </style>
+
+            <script>
+                const availableStudents = {{ available_students | tojson | safe }};
+                const searchInput = document.getElementById('student-search-input');
+                const hiddenInput = document.getElementById('student-username-hidden');
+                const dropdown = document.getElementById('suggestions-dropdown');
+                let activeIndex = -1;
+
+                function renderSuggestions(filtered) {
+                    dropdown.innerHTML = '';
+                    if (filtered.length === 0) {
+                        dropdown.innerHTML = '<div class="no-suggestions">No students found...</div>';
+                        dropdown.style.display = 'block';
+                        return;
+                    }
+
+                    filtered.forEach((student, index) => {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `
+                            <span class="suggestion-name">${student.full_name || student.username}</span>
+                            <span class="suggestion-username">@${student.username}</span>
+                        `;
+                        item.onclick = () => selectStudent(student);
+                        dropdown.appendChild(item);
+                    });
+                    dropdown.style.display = 'block';
+                }
+
+                function validateEnrollment() {
+                    const hiddenInput = document.getElementById('student-username-hidden');
+                    if (!hiddenInput.value) {
+                        alert('Please select a student from the suggestions list.');
+                        return false;
+                    }
+                    return true;
+                }
+
+                function selectStudent(student) {
+                    searchInput.value = student.full_name || student.username;
+                    hiddenInput.value = student.username;
+                    dropdown.style.display = 'none';
+                    activeIndex = -1;
+                }
+
+                searchInput.addEventListener('input', (e) => {
+                    const val = e.target.value.toLowerCase();
+                    hiddenInput.value = ''; // Reset hidden value if user types
+                    if (!val) {
+                        dropdown.style.display = 'none';
+                        return;
+                    }
+
+                    const filtered = availableStudents.filter(s =>
+                        (s.full_name && s.full_name.toLowerCase().includes(val)) ||
+                        s.username.toLowerCase().includes(val)
+                    );
+                    renderSuggestions(filtered);
+                    activeIndex = -1;
+                });
+
+                searchInput.addEventListener('keydown', (e) => {
+                    const items = dropdown.querySelectorAll('.suggestion-item');
+                    if (dropdown.style.display === 'none' || items.length === 0) return;
+
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        activeIndex = (activeIndex + 1) % items.length;
+                        updateActiveItem(items);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        activeIndex = (activeIndex - 1 + items.length) % items.length;
+                        updateActiveItem(items);
+                    } else if (e.key === 'Enter') {
+                        if (activeIndex > -1) {
+                            e.preventDefault();
+                            items[activeIndex].click();
+                        }
+                    } else if (e.key === 'Escape') {
+                        dropdown.style.display = 'none';
+                    }
+                });
+
+                function updateActiveItem(items) {
+                    items.forEach((item, idx) => {
+                        item.classList.toggle('active', idx === activeIndex);
+                        if (idx === activeIndex) {
+                            item.scrollIntoView({ block: 'nearest' });
+                        }
+                    });
+                }
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                    }
+                });
+
+                // Show dropdown on focus if there's text
+                searchInput.addEventListener('focus', () => {
+                    if (searchInput.value) searchInput.dispatchEvent(new Event('input'));
+                });
+            </script>
+            {% endif %}
+
+            {% if students %}
+            <div class="table-container" style="margin-top: 1rem; border: none; box-shadow: none;">
+                <table style="border-collapse: separate; border-spacing: 0 0.75rem;">
+                    <thead>
+                        <tr style="background: transparent;">
+                            <th style="border: none; padding-bottom: 0.5rem;">Student</th>
+                            <th style="text-align: right; border: none; padding-bottom: 0.5rem;">Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr class="staggered-entry"
+                            style="background: var(--card-bg); border-radius: 1rem; transition: transform 0.2s ease;">
+                            <td
+                                style="padding: 1rem; border: 1px solid var(--border-color); border-right: none; border-radius: 1rem 0 0 1rem;">
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    <div class="avatar-sm"
+                                        style="background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); color: white; border: none; width: 40px; height: 40px; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);">
+                                        {{ student.username[0]|upper }}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">{{
+                                            student.full_name if student.full_name else student.username }}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">@{{
+                                            student.username }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td
+                                style="text-align: right; padding: 1rem; border: 1px solid var(--border-color); border-left: none; border-radius: 0 1rem 1rem 0;">
+                                {% if user.role == 'teacher' %}
+                                <button class="btn-primary"
+                                    style="padding: 0.6rem 1.25rem; font-size: 0.825rem; width: auto; display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.75rem; background: var(--bg-color); color: var(--primary-color); border: 1px solid var(--primary-color); box-shadow: none;"
+                                    onmouseover="this.style.background='var(--primary-color)'; this.style.color='white'"
+                                    onmouseout="this.style.background='var(--bg-color)'; this.style.color='var(--primary-color)'"
+                                    onclick="openGradeModal('{{ student.id }}', '{{ student.full_name if student.full_name else student.username }}')">
+                                    <i data-lucide="award" width="14"></i> Record Grade
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+<!-- Simple Modal for Grading -->
+<div id="gradeModal" class="grade-modal-overlay" style="display: none;">
+    <div class="grade-modal-content">
+        <div class="grade-modal-header">
+            <h3 class="grade-modal-title">
+                <i data-lucide="award" style="color: var(--primary-color);"></i>
+                <span>New Grade</span>
+            </h3>
+            <button onclick="closeGradeModal()" class="grade-modal-close">
+                <i data-lucide="x" width="20"></i>
+            </button>
+        </div>
+
+        <div style="margin-bottom: 1.5rem; text-align: center;">
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Adding grade for <span id="modalStudentName"
+                    style="color: var(--text-main); font-weight: 700;"></span></p>
+        </div>
+
+        <form action="{{ url_for('academic.grades') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="course_id" value="{{ course.id }}">
+            <input type="hidden" name="student_id" id="modalStudentId">
+            <input type="hidden" name="redirect_to_course" value="true">
+
+            <div class="grade-form-group">
+                <label>Grade Type</label>
+                <div class="select-wrapper">
+                    <select name="grade_type" required>
+                        <option value="Homework">Homework</option>
+                        <option value="Quiz">Quiz</option>
+                        <option value="Exam">Exam</option>
+                        <option value="Project">Project</option>
+                    </select>
+                    <i data-lucide="chevron-down" class="select-icon"></i>
+                </div>
+            </div>
+
+            <div class="grade-form-group">
+                <label>Score (0-100)</label>
+                <input type="number" name="score" step="0.01" min="0" max="100" required placeholder="e.g. 85.5">
+            </div>
+
+            <div class="grade-modal-footer">
+                <button type="button" onclick="closeGradeModal()" class="btn-cancel">Cancel</button>
+                <button type="submit" class="btn-save">
+                    <i data-lucide="save" width="18"></i> Save Grade
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .grade-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(8px);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.2s ease-out forwards;
+    }
+
+    .grade-modal-content {
+        background: var(--card-bg);
+        width: 100%;
+        max-width: 420px;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        border: 1px solid var(--border-color);
+        transform: translateY(20px);
+        animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes slideUpModal {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .grade-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .grade-modal-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--text-main);
+    }
+
+    .grade-modal-close {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .grade-modal-close:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--error-color);
+    }
+
+    .grade-form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .grade-form-group label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .grade-form-group input,
+    .grade-form-group select {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border-radius: 12px;
+        border: 2px solid var(--border-color);
+        background: var(--bg-primary);
+        color: var(--text-main);
+        font-size: 1rem;
+        font-weight: 500;
+        outline: none;
+        transition: all 0.2s;
+        appearance: none;
+    }
+
+    .grade-form-group select option {
+        background-color: var(--card-bg);
+        color: var(--text-main);
+    }
+
+    .select-wrapper {
+        position: relative;
+    }
+
+    .select-icon {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 18px;
+        pointer-events: none;
+        color: var(--text-muted);
+    }
+
+    .grade-form-group input:focus,
+    .grade-form-group select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+
+    .grade-modal-footer {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .btn-cancel {
+        flex: 1;
+        padding: 0.875rem;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        background: transparent;
+        color: var(--text-muted);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-cancel:hover {
+        background: var(--bg-primary);
+        color: var(--text-main);
+    }
+
+    .btn-save {
+        flex: 2;
+        padding: 0.875rem;
+        border-radius: 12px;
+        border: none;
+        background: var(--primary-color);
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        transition: all 0.2s;
+    }
+
+    .btn-save:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(99, 102, 241, 0.4);
+    }
+</style>
+
+<script>
+    function openGradeModal(studentId, studentName) {
+        document.getElementById('modalStudentId').value = studentId;
+        document.getElementById('modalStudentName').textContent = studentName;
+        document.getElementById('gradeModal').style.display = 'flex';
+    }
+
+    function closeGradeModal() {
+        document.getElementById('gradeModal').style.display = 'none';
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function (event) {
+        if (event.target == document.getElementById('gradeModal')) {
+            closeGradeModal();
+        }
+    }
+</script>
+{% endblock %}

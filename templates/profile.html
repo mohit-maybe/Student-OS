@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+        <div class="header" style="align-items: flex-end; margin-bottom: 3rem;">
+            <div>
+                <p style="color: var(--text-muted); font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">
+                    Account Settings</p>
+                <h1 style="font-size: 2.25rem; font-weight: 800; letter-spacing: -0.025em;">My Profile</h1>
+            </div>
+        </div>
+
+        <div class="stat-card" style="max-width: 640px; margin: 0; padding: 3rem;">
+            <div style="display: flex; align-items: center; gap: 2rem; margin-bottom: 3rem;">
+                <div class="avatar-lg">
+                    {{ user.username[0].upper() }}
+                </div>
+                <div>
+                    <h2 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 0.5rem;">{{ user.username }}</h2>
+                    <span class="badge badge-indigo"
+                        style="text-transform: capitalize; font-size: 0.875rem; padding: 0.4rem 1rem;">
+                        {{ user.role }} Account
+                    </span>
+                </div>
+            </div>
+
+            <div class="profile-grid" style="display: grid; gap: 2rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label"
+                        style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Username</label>
+                    <div
+                        style="font-size: 1.1rem; font-weight: 500; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);">
+                        {{ user.username }}
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label"
+                        style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Role
+                        Permission</label>
+                    <div
+                        style="font-size: 1.1rem; font-weight: 500; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color); text-transform: capitalize;">
+                        {{ user.role }}
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+                <p style="color: var(--text-muted); font-size: 0.875rem;">Account Managed by University IT</p>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

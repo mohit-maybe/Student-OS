@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+<div class="page-header">
+    <div>
+        <p class="page-eyebrow">UNIVERSITY MANAGEMENT</p>
+        <h1 class="page-title">Courses</h1>
+    </div>
+
+    <div class="header-actions" style="display: flex; align-items: center; gap: 1rem;">
+        <div class="search-wrapper">
+            <i data-lucide="search" class="search-icon"></i>
+            <input 
+                type="text"
+                id="courseSearch"
+                placeholder="Search courses..."
+                class="search-input"
+            />
+        </div>
+
+        {% if user.role != 'student' %}
+        <a href="{{ url_for('courses.new_course') }}" class="btn-primary add-course-btn" style="white-space: nowrap;">
+            <i data-lucide="plus" width="18"></i> <span>New Course</span>
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+        <div id="courseGridContainer">
+            <div class="courses-grid">
+
+            {% if not courses %}
+            <div class="stat-card" style="text-align: center; padding: 3rem;">
+                <i data-lucide="book-open"
+                    style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                <h3>No Courses Found</h3>
+                <p style="color: var(--text-muted);">There are no courses currently available.</p>
+            </div>
+            {% else %}
+            <div class="stats-grid stagger-container" id="courseGrid">
+                {% for course in courses %}
+                <div class="stat-card course-card"
+                    onclick="window.location.href='{{ url_for('courses.course_details', course_id=course.id) }}';">
+                    <div class="course-card-header">
+                        <div class="course-icon">
+                            <i data-lucide="book-open"></i>
+                        </div>
+                        {% if user.role == 'admin' or (user.role == 'teacher' and course.teacher_id == user.id) %}
+                        <div class="course-actions">
+                            <a href="{{ url_for('courses.edit_course', course_id=course.id) }}" class="action-btn"
+                                onclick="event.stopPropagation()">
+                                <i data-lucide="settings" width="16"></i>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <h3>{{ course.name }}</h3>
+                    <div class="course-meta">
+                        <div class="meta-item">
+                            <i data-lucide="calendar" width="14"></i>
+                            <span>{{ course.schedule if course.schedule else 'Flexible' }}</span>
+                        </div>
+                        {% if user.role != 'teacher' %}
+                        <div class="meta-item">
+                            <i data-lucide="user" width="14"></i>
+                            <span>{{ course.teacher_name }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="course-footer">
+                        <span class="badge badge-indigo">Active</span>
+                        <i data-lucide="chevron-right" class="arrow"></i>
+                    </div>
+                </div>
+                {% endfor %}
+                </div>
+
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+<script>
+    const searchInput = document.getElementById('courseSearch');
+    const grid = document.getElementById('courseGrid');
+    const container = document.getElementById('courseGridContainer');
+
+    let debounceTimer;
+
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const query = e.target.value;
+            fetch(`/api/courses/search?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    renderCourses(data.courses);
+                });
+        }, 300);
+    });
+
+    function renderCourses(courses) {
+        if (courses.length === 0) {
+            container.innerHTML = `
+                <div class="stat-card" style="text-align: center; padding: 3rem;">
+                    <i data-lucide="search-x" style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                    <h3>No results found</h3>
+                    <p style="color: var(--text-muted);">Try a different search term.</p>
+                </div>`;
+            lucide.createIcons();
+            return;
+        }
+
+        let html = '<div class="stats-grid stagger-container" id="courseGrid">';
+        courses.forEach(c => {
+            html += `
+                <div class="stat-card course-card animate-entry" 
+                    onclick="window.location.href='/course/${c.id}';">
+                    <div class="course-card-header">
+                        <div class="course-icon"><i data-lucide="book-open"></i></div>
+                    </div>
+                    <h3>${c.name}</h3>
+                    <div class="course-meta">
+                        <div class="meta-item"><i data-lucide="calendar" width="14"></i><span>${c.schedule || 'Flexible'}</span></div>
+                        ${c.teacher_name ? `<div class="meta-item"><i data-lucide="user" width="14"></i><span>${c.teacher_name}</span></div>` : ''}
+                    </div>
+                    <div class="course-footer">
+                        <span class="badge badge-indigo">Active</span>
+                        <i data-lucide="chevron-right" class="arrow"></i>
+                    </div>
+                </div>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+        lucide.createIcons();
+    }
+</script>
+{% endblock %}

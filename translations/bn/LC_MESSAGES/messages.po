@@ -1,0 +1,153 @@
+# Bengali translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-01-28 19:14+0530\n"
+"PO-Revision-Date: 2026-01-28 19:12+0530\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: bn\n"
+"Language-Team: bn <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: routes/dashboard.py:66
+msgid "Current GPA"
+msgstr "বর্তমান জিপিএ"
+
+#: routes/dashboard.py:67
+msgid "Total Courses"
+msgstr "মোট কোর্স"
+
+#: routes/dashboard.py:68
+msgid "Attendance Rate"
+msgstr "উপস্থিতির হার"
+
+#: routes/dashboard.py:69 routes/dashboard.py:115
+msgid "Status"
+msgstr "অবস্থা"
+
+#: routes/dashboard.py:69
+msgid "Academic Honor"
+msgstr "একাডেমিক সম্মান"
+
+#: routes/dashboard.py:69
+msgid "Active"
+msgstr "সক্রিয়"
+
+#: routes/dashboard.py:112
+msgid "Class Average"
+msgstr "ক্লাসের গড়"
+
+#: routes/dashboard.py:113
+msgid "My Courses"
+msgstr "আমার কোর্স"
+
+#: routes/dashboard.py:114
+msgid "Total Students"
+msgstr "মোট ছাত্র"
+
+#: routes/dashboard.py:115
+msgid "Teacher Profile"
+msgstr "শিক্ষক প্রোফাইল"
+
+#: routes/dashboard.py:130
+msgid "System"
+msgstr "সিস্টেম"
+
+#: routes/dashboard.py:130
+msgid "Online"
+msgstr "অনলাইন"
+
+#: routes/dashboard.py:131
+msgid "Users"
+msgstr "ব্যবহারকারী"
+
+#: routes/dashboard.py:132 templates/sidebar.html:34
+msgid "Courses"
+msgstr "কোর্স"
+
+#: routes/dashboard.py:133
+msgid "Role"
+msgstr "ভূমিকা"
+
+#: templates/settings.html:10
+msgid "System Preferences"
+msgstr "সিস্টেম পছন্দসমূহ"
+
+#: templates/settings.html:11 templates/sidebar.html:76
+msgid "Settings"
+msgstr "সেটিংস"
+
+#: templates/settings.html:30
+msgid "Language & Region"
+msgstr "ভাষা ও অঞ্চল"
+
+#: templates/settings.html:31
+msgid ""
+"Change the application language to\n"
+"                            your preference."
+msgstr "আপনার পছন্দ অনুযায়ী অ্যাপ্লিকেশনের ভাষা পরিবর্তন করুন।"
+
+#: templates/settings.html:66
+msgid "Appearance"
+msgstr "চেহারা"
+
+#: templates/settings.html:69
+msgid ""
+"Customize how\n"
+"                    Student OS looks on your device."
+msgstr "আপনার ডিভাইসে Student OS কেমন দেখাবে তা কাস্টমাইজ করুন।"
+
+#: templates/settings.html:74 templates/sidebar.html:87
+msgid "Dark Mode"
+msgstr "ডার্ক মোড"
+
+#: templates/settings.html:90
+msgid "Notifications"
+msgstr "বিজ্ঞপ্তি"
+
+#: templates/settings.html:93
+msgid ""
+"Manage how you\n"
+"                    receive alerts and updates."
+msgstr "আপনি কীভাবে সতর্কতা এবং আপডেট পাবেন তা পরিচালনা করুন।"
+
+#: templates/settings.html:96
+msgid "Configure Notifications"
+msgstr "বিজ্ঞপ্তি কনফিগার করুন"
+
+#: templates/sidebar.html:18
+msgid "Dashboard"
+msgstr "ড্যাশবোর্ড"
+
+#: templates/sidebar.html:26
+msgid "Admission"
+msgstr "ভর্তি"
+
+#: templates/sidebar.html:41
+msgid "Grades"
+msgstr "গ্রেড"
+
+#: templates/sidebar.html:48
+msgid "Attendance"
+msgstr "উপস্থিতি"
+
+#: templates/sidebar.html:54
+msgid "Messages"
+msgstr "বার্তা"
+
+#: templates/sidebar.html:69
+msgid "Profile"
+msgstr "প্রোফাইল"
+
+#: templates/sidebar.html:98
+msgid "Sign Out"
+msgstr "সাইন আউট"

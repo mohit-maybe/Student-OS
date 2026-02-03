@@ -1,0 +1,26 @@
+/* Page Loading Bar */
+.page-loading-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 4px;
+    /* Increased slightly for visibility */
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color), var(--success-color));
+    background-size: 200% 100%;
+    z-index: 10000;
+    /* Ensure it's on top of everything including sidebar */
+    width: 0;
+    transition: width 0.4s ease-in-out;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    animation: gradientMove 2s linear infinite;
+}
+
+@keyframes gradientMove {
+    0% {
+        background-position: 100% 0;
+    }
+
+    100% {
+        background-position: -100% 0;
+    }
+}
