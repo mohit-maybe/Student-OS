@@ -23,7 +23,7 @@ from extensions import mail, babel, csrf, login_manager
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['DATABASE'] = 'student_os.db'
+app.config['DATABASE'] = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'student_os.db')
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['UNIVERSITY_NAME'] = 'GLOBAL UNIVERSITY OF OS'
@@ -135,11 +135,8 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def internal_server_error(e):
-    # Try to render custom template, but fallback to readable error if it fails
-    try:
-        return render_template('500.html'), 500
-    except Exception as render_err:
-        return f"500 Internal Server Error: {str(e)} (Context Error: {str(render_err)})", 500
+    import traceback
+    return f"<h1>500 Internal Server Error</h1><pre>{traceback.format_exc()}</pre>", 500
 
 def seed_demo_data(db):
     """Populates the database with sample data if it's empty."""
