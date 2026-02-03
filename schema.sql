@@ -66,6 +66,51 @@ CREATE TABLE IF NOT EXISTS submissions (
     FOREIGN KEY (assignment_id) REFERENCES assignments (id),
     FOREIGN KEY (student_id) REFERENCES users (id)
 );
-CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, message TEXT NOT NULL, type TEXT DEFAULT 'info', is_read BOOLEAN DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES users (id));
-CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender_id INTEGER NOT NULL, recipient_id INTEGER NOT NULL, content TEXT NOT NULL, is_read BOOLEAN DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (sender_id) REFERENCES users (id), FOREIGN KEY (recipient_id) REFERENCES users (id));
-CREATE TABLE IF NOT EXISTS remarks (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, teacher_id INTEGER NOT NULL, term TEXT, remarks TEXT, improvement_areas TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (student_id) REFERENCES users (id), FOREIGN KEY (teacher_id) REFERENCES users (id));
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, 
+    user_id INTEGER NOT NULL, 
+    message TEXT NOT NULL, 
+    type TEXT DEFAULT 'info', 
+    is_read BOOLEAN DEFAULT 0, 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    FOREIGN KEY (user_id) REFERENCES users (id)
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, 
+    sender_id INTEGER NOT NULL, 
+    recipient_id INTEGER NOT NULL, 
+    content TEXT NOT NULL, 
+    is_read BOOLEAN DEFAULT 0, 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    FOREIGN KEY (sender_id) REFERENCES users (id), 
+    FOREIGN KEY (recipient_id) REFERENCES users (id)
+);
+
+CREATE TABLE IF NOT EXISTS remarks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, 
+    student_id INTEGER NOT NULL, 
+    teacher_id INTEGER NOT NULL, 
+    term TEXT, 
+    remarks TEXT, 
+    improvement_areas TEXT, 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    FOREIGN KEY (student_id) REFERENCES users (id), 
+    FOREIGN KEY (teacher_id) REFERENCES users (id)
+);
+
+CREATE TABLE IF NOT EXISTS student_details (
+    user_id INTEGER PRIMARY KEY,
+    full_name TEXT NOT NULL,
+    email TEXT,
+    mobile TEXT,
+    dob TEXT,
+    gender TEXT,
+    address TEXT,
+    parent_name TEXT,
+    parent_mobile TEXT,
+    parent_email TEXT,
+    admission_number TEXT UNIQUE,
+    FOREIGN KEY (user_id) REFERENCES users (id)
+);
