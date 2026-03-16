@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+        <header class="content-header">
+            <div>
+                <h1>Classrooms</h1>
+                <p>Manage school classes and assigned teachers</p>
+            </div>
+            {% if user.role == 'admin' %}
+            <button class="btn btn-primary" onclick="document.getElementById('createClassModal').style.display='flex'">
+                <i data-lucide="plus"></i> New Classroom
+            </button>
+            {% endif %}
+        </header>
+
+        <div class="grid-container" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem;">
+            {% for classroom in classrooms %}
+            <div class="classroom-card-premium" onclick="window.location.href='{{ url_for('classrooms.detail', classroom_id=classroom.id) }}';">
+                <div class="card-glow"></div>
+                <div class="card-content">
+                    <div class="card-top">
+                        <div class="icon-orb">
+                            <i data-lucide="users"></i>
+                        </div>
+                        <span class="year-tag">{{ classroom.academic_year }}</span>
+                    </div>
+                    
+                    <div class="card-middle">
+                        <h3 class="class-title">{{ classroom.name }}</h3>
+                        <p class="section-label">Section: <span>{{ classroom.section or 'General' }}</span></p>
+                    </div>
+                    
+                    <div class="card-footer-premium">
+                        <div class="teacher-info">
+                            <div class="teacher-avatar">
+                                <i data-lucide="user"></i>
+                            </div>
+                            <div class="teacher-meta">
+                                <span class="label">Teacher</span>
+                                <span class="value">{{ classroom.teacher_name or 'Not Assigned' }}</span>
+                            </div>
+                        </div>
+                        <div class="student-pill">
+                            <span class="count">{{ classroom.student_count }}</span>
+                            <span class="label">Students</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state-premium" style="grid-column: 1 / -1;">
+                <div class="empty-icon">
+                    <i data-lucide="layout"></i>
+                </div>
+                <h3>No classrooms created yet</h3>
+                <p>Start by creating your first classroom to begin managing students and grades.</p>
+                {% if user.role == 'admin' %}
+                <button class="btn btn-primary" onclick="document.getElementById('createClassModal').style.display='flex'" style="margin-top: 1.5rem;">
+                    <i data-lucide="plus"></i> Create First Class
+                </button>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+
+{% if user.role == 'admin' %}
+<!-- Create Class Modal -->
+<div id="createClassModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 4000; align-items: center; justify-content: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);">
+    <div class="modal-card card glass-card" style="width: 100%; max-width: 500px; padding: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2>Create New Classroom</h2>
+            <button onclick="document.getElementById('createClassModal').style.display='none'" style="background: none; border: none; cursor: pointer;"><i data-lucide="x"></i></button>
+        </div>
+        <form action="{{ url_for('classrooms.create') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label>Class Name (e.g. Class 10A)</label>
+                <input type="text" name="name" class="form-input" placeholder="Enter class name" required>
+            </div>
+            <div class="form-group">
+                <label>Section (e.g. Science, Arts)</label>
+                <input type="text" name="section" class="form-input" placeholder="Enter section">
+            </div>
+            <div class="form-group">
+                <label>Assign Class Teacher</label>
+                <select name="teacher_id" class="form-input">
+                    <option value="">Select Teacher</option>
+                    {% for teacher in teachers %}
+                    <option value="{{ teacher.id }}">{{ teacher.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Academic Year</label>
+                <input type="text" name="academic_year" class="form-input" value="2025-2026">
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button type="button" class="btn" style="flex: 1;" onclick="document.getElementById('createClassModal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="flex: 1;">Create Class</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    .classroom-card-premium {
+        position: relative;
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 1.5rem;
+        padding: 1.75rem;
+        cursor: pointer;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+
+    .classroom-card-premium:hover {
+        transform: translateY(-8px);
+        border-color: var(--primary-color);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-glow {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at top right, var(--primary-light), transparent 70%);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        pointer-events: none;
+    }
+
+    .classroom-card-premium:hover .card-glow {
+        opacity: 1;
+    }
+
+    .card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .icon-orb {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+    }
+
+    .year-tag {
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--primary-color);
+        background: var(--primary-light);
+        padding: 0.4rem 0.8rem;
+        border-radius: 2rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .class-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        margin-bottom: 0.5rem;
+        color: var(--text-main);
+    }
+
+    .section-label {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    .section-label span {
+        color: var(--text-main);
+        font-weight: 700;
+    }
+
+    .card-footer-premium {
+        margin-top: 2.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .teacher-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .teacher-avatar {
+        width: 32px;
+        height: 32px;
+        background: var(--bg-color);
+        color: var(--text-muted);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border-color);
+    }
+
+    .teacher-meta {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .teacher-meta .label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+        font-weight: 800;
+    }
+
+    .teacher-meta .value {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .student-pill {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .student-pill .count {
+        font-size: 1.25rem;
+        font-weight: 900;
+        color: var(--primary-color);
+        line-height: 1;
+    }
+
+    .student-pill .label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-weight: 800;
+        letter-spacing: 0.02em;
+    }
+
+    .empty-state-premium {
+        text-align: center;
+        padding: 5rem 2rem;
+        background: var(--card-bg);
+        border: 2px dashed var(--border-color);
+        border-radius: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .empty-icon {
+        width: 64px;
+        height: 64px;
+        background: var(--primary-light);
+        color: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .empty-state-premium h3 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state-premium p {
+        color: var(--text-muted);
+        max-width: 400px;
+    }
+</style>
+<script>
+    // Close modal on outside click
+    window.onclick = function(event) {
+        const modal = document.getElementById('createClassModal');
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

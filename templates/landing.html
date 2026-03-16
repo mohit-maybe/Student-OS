@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block body_class %}landing-body{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+
+<div class="landing-page">
+    <!-- Animated Background Orbs -->
+    <div class="landing-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Main Navigation -->
+    <nav class="landing-nav">
+        <div class="nav-brand">
+            <i data-lucide="graduation-cap" width="32" height="32"></i>
+            <span>Student OS</span>
+        </div>
+        <div class="nav-links">
+            <a href="#features" class="nav-link">Features</a>
+            <a href="#about" class="nav-link">About</a>
+            <a href="{{ url_for('auth.login') }}" class="btn-nav-login">Sign In</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-deco deco-1"></div>
+        <div class="hero-deco deco-2"></div>
+        <div class="hero-deco deco-3"></div>
+        <div class="hero-badge">New: Academic Intelligence 2.0</div>
+        <h1 class="hero-title">Empower Your Academic <span>Journey</span> Today.</h1>
+        <p class="hero-subtitle">The ultimate university management portal designed for students, teachers, and administrators. Experience the future of education.</p>
+        <div class="hero-actions">
+            <a href="{{ url_for('auth.login') }}" class="btn-primary-large">Get Started Free</a>
+            <a href="#features" class="btn-secondary-large">Explore Features</a>
+        </div>
+    </header>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="section-header">
+            <h2 class="section-title">All-in-One Academic Suite</h2>
+            <p style="color: var(--text-muted); margin-top: 1rem;">Everything you need to succeed, all in one premium glass interface.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon"><i data-lucide="shield-check"></i></div>
+                <h3>Secure Portal</h3>
+                <p>Role-based access control with enterprise-grade security. Your data, protected by the latest standards.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i data-lucide="bar-chart-3"></i></div>
+                <h3>Academic Insights</h3>
+                <p>Track your grades, attendance, and progress with beautiful real-time visualizations and analytics.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i data-lucide="message-square"></i></div>
+                <h3>Smart Messaging</h3>
+                <p>Stay connected with peers and professors through our built-in real-time messaging system.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i data-lucide="zap"></i></div>
+                <h3>Exam Predictor</h3>
+                <p>Leverage AI to predict exam patterns and focus your studies on what truly matters most.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about-section">
+        <div class="about-grid">
+            <div class="about-content">
+                <h2 class="section-title">Your Entire University Life, <span>Unified.</span></h2>
+                <p class="about-text">
+                    Student OS is designed to be your secondary brain. It simplifies the chaos of university management into a single, intuitive workspace. From tracking your semester progress to instant collaboration with peers, we've built every feature to empower your academic journey.
+                </p>
+                
+                <div class="benefit-box">
+                    <div class="benefit-item">
+                        <div class="benefit-icon"><i data-lucide="layout-dashboard"></i></div>
+                        <div class="benefit-info">
+                            <h4>One Dashboard</h4>
+                            <p>All your courses, grades, and schedules in one view.</p>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon"><i data-lucide="users"></i></div>
+                        <div class="benefit-info">
+                            <h4>Social Synergy</h4>
+                            <p>Collaborate and chat with classmates in real-time.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <a href="{{ url_for('auth.login') }}" class="btn-primary-large">Start Exploring Now</a>
+                </div>
+            </div>
+            <div class="about-visual">
+                <div class="terminal-container">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <div class="terminal-title">system_monitor.sh</div>
+                    </div>
+                    <div class="terminal-body" id="terminal-content">
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">fetch system_stats --live</span></div>
+                        <div class="terminal-line status-success">Initializing Student OS v2.1...</div>
+                        <div class="terminal-line">Connection: <span class="highlight">SECURE (SSL/TLS)</span></div>
+                        <div class="terminal-line">Active Students: <span class="highlight pulse" id="live-students">10,482</span></div>
+                        <div class="terminal-line">AI Prediction Accuracy: <span class="highlight">94.8%</span></div>
+                        <div class="terminal-line">Server Load: <div class="progress-bar"><div class="progress-fill" style="width: 35%"></div></div></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="cursor">_</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer style="padding: 4rem 5%; text-align: center; border-top: 1px solid var(--glass-border);">
+        <div class="nav-brand" style="justify-content: center; margin-bottom: 1.5rem;">
+            <i data-lucide="graduation-cap"></i>
+            <span>Student OS</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.875rem;">&copy; 2026 Student OS Technical Institute. All rights reserved.</p>
+    </footer>
+</div>
+
+<script>
+    // Intersection Observer for scroll animations
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = 1;
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.feature-card').forEach(card => {
+        card.style.opacity = 0;
+        card.style.transform = 'translateY(30px)';
+        card.style.transition = 'all 0.6s ease-out';
+        observer.observe(card);
+    });
+
+    // Terminal Interactivity
+    const liveStudents = document.getElementById('live-students');
+    const progressBar = document.querySelector('.progress-fill');
+    
+    let studentCount = 10482;
+    
+    setInterval(() => {
+        // Randomly increment student count
+        if (Math.random() > 0.7) {
+            studentCount += Math.floor(Math.random() * 3);
+            liveStudents.innerText = studentCount.toLocaleString();
+        }
+        
+        // Randomly flicker progress bar
+        const newWidth = 30 + Math.random() * 20;
+        progressBar.style.width = `${newWidth}%`;
+    }, 3000);
+
+    // Navbar Scroll Effect
+    const nav = document.querySelector('.landing-nav');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            nav.classList.add('scrolled');
+        } else {
+            nav.classList.remove('scrolled');
+        }
+    });
+</script>
+{% endblock %}

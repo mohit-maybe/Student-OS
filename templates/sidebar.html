@@ -26,6 +26,13 @@
                 <span>{{ _('Admission') }}</span>
             </a>
         </li>
+        <li>
+            <a href="{{ url_for('classrooms.index') }}"
+                class="{{ 'active' if 'classrooms' in request.endpoint else '' }}">
+                <i data-lucide="layout"></i>
+                <span>{{ _('Classrooms') }}</span>
+            </a>
+        </li>
         {% endif %}
         <li>
             <a href="{{ url_for('courses.courses') }}"
@@ -46,6 +53,13 @@
                 class="{{ 'active' if 'academic.attendance' in request.endpoint else '' }}">
                 <i data-lucide="calendar-check"></i>
                 <span>{{ _('Attendance') }}</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('exam_predictor.dashboard') }}"
+                class="{{ 'active' if 'exam_predictor' in request.endpoint else '' }}">
+                <i data-lucide="sparkles"></i>
+                <span>{{ _('AI Predictor') }}</span>
             </a>
         </li>
         <li>

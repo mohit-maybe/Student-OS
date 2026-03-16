@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="main-container">
+    <header class="page-header" style="margin-bottom: 2rem; display: flex; align-items: center; gap: 1.5rem;">
+        <a href="{{ url_for('classrooms.detail', classroom_id=classroom.id) }}" class="back-link">
+            <i data-lucide="arrow-left"></i>
+        </a>
+        <div style="flex: 1;">
+            <h1 style="font-size: 2rem; margin: 0; background: linear-gradient(135deg, var(--primary-color), #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Live QR Scanner</h1>
+            <p style="color: var(--text-muted); margin: 0.25rem 0 0 0;">{{ classroom.name }} • Attendance Session</p>
+        </div>
+        <div class="status-badge" id="scannerStatus" style="padding: 0.5rem 1rem; border-radius: 99px; background: rgba(16, 185, 129, 0.1); color: #10b981; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+            <span class="status-dot" style="width: 8px; height: 8px; background: currentColor; border-radius: 50%; display: inline-block;"></span>
+            Ready
+        </div>
+    </header>
+
+    <div class="grid-layout" style="display: grid; grid-template-columns: 1fr 350px; gap: 2rem; align-items: start;">
+        <!-- Left: Scanner Viewport -->
+        <div class="scanner-section">
+            <div class="card glass-card" style="padding: 1.5rem; overflow: hidden; position: relative;">
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: var(--text-main);">1. Select Course/Period</label>
+                    <select id="courseSelect" class="form-input" style="width: 100%; padding: 0.75rem 1rem; border-radius: 10px;">
+                        {% for course in courses %}
+                        <option value="{{ course.id }}">{{ course.name }}</option>
+                        {% else %}
+                        <option value="">No courses assigned yet</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div id="reader-container" style="border-radius: 16px; overflow: hidden; position: relative; background: #000; min-height: 400px; display: flex; align-items: center; justify-content: center;">
+                    <div id="reader" style="width: 100%;"></div>
+                    <!-- Scanner Overlays -->
+                    <div id="scanOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border: 2px solid transparent; transition: all 0.3s; z-index: 10;">
+                        <div class="scan-laser" style="position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(to right, transparent, var(--primary-color), transparent); box-shadow: 0 0 15px var(--primary-color); animation: scanLaser 3s infinite linear;"></div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                    <button id="startBtn" class="btn btn-primary" style="flex: 1; height: 50px;">
+                        <i data-lucide="camera" style="margin-right: 0.5rem;"></i> Start Camera
+                    </button>
+                    <button id="stopBtn" class="btn" style="flex: 1; height: 50px; display: none;">
+                        <i data-lucide="camera-off" style="margin-right: 0.5rem;"></i> Stop
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Recent Scans -->
+        <div class="log-section">
+            <div class="card glass-card" style="padding: 1.5rem; height: 100%; display: flex; flex-direction: column;">
+                <h3 style="margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i data-lucide="history" style="width: 20px;"></i> Recent Scans
+                </h3>
+                <div id="scanLog" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div class="empty-log" style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.9rem;">
+                        <i data-lucide="qr-code" style="width: 48px; height: 48px; opacity: 0.1; margin-bottom: 1rem;"></i>
+                        <p>Awaiting scans...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes scanLaser {
+        0% { top: 0; opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { top: 100%; opacity: 0; }
+    }
+
+    .status-dot-active {
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.5); opacity: 0.5; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    .log-entry {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from { transform: translateX(20px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Override html5-qrcode styles for a premium look */
+    #reader video {
+        border-radius: 16px !important;
+        object-fit: cover !important;
+    }
+    #reader__scan_region {
+        background: transparent !important;
+    }
+</style>
+
+<!-- Load html5-qrcode from CDN -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script>
+    let html5QrCode = null;
+    let isProcessing = false;
+    let lastScanContent = null;
+    let lastScanTime = 0;
+
+    const scanLog = document.getElementById('scanLog');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const scannerStatus = document.getElementById('scannerStatus');
+    const scanOverlay = document.getElementById('scanOverlay');
+
+    function updateStatus(text, type) {
+        scannerStatus.textContent = text;
+        scannerStatus.style.color = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#f59e0b';
+        scannerStatus.style.background = type === 'success' ? 'rgba(16, 185, 129, 0.1)' : type === 'error' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)';
+        
+        const dot = document.createElement('span');
+        dot.className = 'status-dot';
+        if(text.includes("Scanning")) dot.classList.add('status-dot-active');
+        dot.style.cssText = "width: 8px; height: 8px; background: currentColor; border-radius: 50%; display: inline-block; margin-right: 0.5rem;";
+        scannerStatus.prepend(dot);
+    }
+
+    function addLogEntry(name, admission) {
+        const empty = scanLog.querySelector('.empty-log');
+        if(empty) empty.remove();
+        
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); color: var(--primary-color); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="check" style="width: 16px;"></i>
+            </div>
+            <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 0.9rem;">${name}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">${admission} • Just now</div>
+            </div>
+        `;
+        scanLog.prepend(entry);
+        lucide.createIcons();
+    }
+
+    async function onScanSuccess(decodedText, decodedResult) {
+        const now = Date.now();
+        // Prevent duplicate scans within 3 seconds for the same student
+        if (decodedText === lastScanContent && (now - lastScanTime < 3000)) return;
+        
+        lastScanContent = decodedText;
+        lastScanTime = now;
+        
+        const courseId = document.getElementById('courseSelect').value;
+        if (!courseId) {
+            updateStatus("Select a course first!", "error");
+            return;
+        }
+
+        // Pulse the overlay green
+        scanOverlay.style.borderColor = "#10b981";
+        setTimeout(() => scanOverlay.style.borderColor = "transparent", 500);
+
+        try {
+            const resp = await fetch('{{ url_for("classrooms.mark_qr_attendance") }}', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ 
+                    qr_code: decodedText,
+                    course_id: courseId
+                })
+            });
+            const result = await resp.json();
+            
+            if (result.success) {
+                updateStatus("Logged: " + result.student_name, "success");
+                addLogEntry(result.student_name, result.admission_no);
+                
+                // Audio feedback if possible
+                const beep = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
+                beep.play().catch(() => {});
+            } else {
+                updateStatus(result.message || "Marking failed", "error");
+            }
+        } catch (err) {
+            updateStatus("Connection Error", "error");
+        }
+    }
+
+    startBtn.addEventListener('click', () => {
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            config, 
+            onScanSuccess
+        ).then(() => {
+            updateStatus("Scanning...", "warning");
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'block';
+        }).catch(err => {
+            updateStatus("Camera access denied", "error");
+        });
+    });
+
+    stopBtn.addEventListener('click', () => {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => {
+                updateStatus("Scanner Paused", "success");
+                startBtn.style.display = 'block';
+                stopBtn.style.display = 'none';
+            });
+        }
+    });
+
+</script>
+{% endblock %}

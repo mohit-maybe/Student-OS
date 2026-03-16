@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, send_from_directory, current_app, send_file
 from flask_login import login_required, current_user
 from db import get_db
-from utils import add_notification
+from helpers import add_notification
 from reports import generate_student_report_card
 import io
 import zipfile
@@ -14,67 +14,79 @@ academic_bp = Blueprint('academic', __name__)
 @login_required
 def grades():
     db = get_db()
-    if request.method == 'POST' and current_user.role == 'teacher':
-        score = float(request.form.get('score', 0))
-        if not (0 <= score <= 100):
-            flash('Score must be between 0 and 100.', 'error')
-            return redirect(url_for('academic.grades'))
+    from db import db_cursor
+    with db_cursor(db) as cursor:
+        if request.method == 'POST' and current_user.role == 'teacher':
+            score = float(request.form.get('score', 0))
+            if not (0 <= score <= 100):
+                flash('Score must be between 0 and 100.', 'error')
+                return redirect(url_for('academic.grades'))
+                
+            cursor.execute('INSERT INTO grades (student_id, course_id, score, grade_type) VALUES (%s, %s, %s, %s)',
+                       (request.form.get('student_id'), request.form.get('course_id'), 
+                        request.form.get('score'), request.form.get('grade_type')))
+            db.commit()
+            flash('Grade added!', 'success')
             
-        db.execute('INSERT INTO grades (student_id, course_id, score, grade_type) VALUES (?, ?, ?, ?)',
-                   (request.form.get('student_id'), request.form.get('course_id'), 
-                    request.form.get('score'), request.form.get('grade_type')))
-        db.commit()
-        flash('Grade added!', 'success')
-        
-        if request.form.get('redirect_to_course') == 'true':
-            return redirect(url_for('courses.course_details', course_id=request.form.get('course_id')))
-        return redirect(url_for('academic.grades'))
+            if request.form.get('redirect_to_course') == 'true':
+                return redirect(url_for('courses.course_details', course_id=request.form.get('course_id')))
+            return redirect(url_for('academic.grades'))
 
-    if current_user.role == 'student':
-        grades = db.execute('''
-            SELECT g.*, c.name as course_name FROM grades g 
-            JOIN courses c ON g.course_id = c.id WHERE g.student_id = ?
-        ''', (current_user.id,)).fetchall()
-    else:
-        grades = db.execute('''
-            SELECT g.*, u.username as student_name, c.name as course_name
-            FROM grades g JOIN users u ON g.student_id = u.id JOIN courses c ON g.course_id = c.id
-            WHERE c.teacher_id = ?
-        ''', (current_user.id,)).fetchall()
-        
-    students = db.execute("SELECT * FROM users WHERE role = 'student'").fetchall()
-    my_courses = db.execute('SELECT * FROM courses WHERE teacher_id = ?', (current_user.id,)).fetchall()
+        if current_user.role == 'student':
+            cursor.execute('''
+                SELECT g.*, c.name as course_name FROM grades g 
+                JOIN courses c ON g.course_id = c.id WHERE g.student_id = %s
+            ''', (current_user.id,))
+            grades = cursor.fetchall()
+        else:
+            cursor.execute('''
+                SELECT g.*, u.username as student_name, c.name as course_name
+                FROM grades g JOIN users u ON g.student_id = u.id JOIN courses c ON g.course_id = c.id
+                WHERE c.teacher_id = %s
+            ''', (current_user.id,))
+            grades = cursor.fetchall()
+            
+        cursor.execute("SELECT * FROM users WHERE role = 'student'")
+        students = cursor.fetchall()
+        cursor.execute('SELECT * FROM courses WHERE teacher_id = %s', (current_user.id,))
+        my_courses = cursor.fetchall()
     return render_template('grades.html', grades=grades, courses=my_courses, students=students, user=current_user)
 
 @academic_bp.route('/attendance', methods=['GET', 'POST'])
 @login_required
 def attendance():
     db = get_db()
-    if request.method == 'POST' and current_user.role == 'teacher':
-        db.execute('INSERT INTO attendance (student_id, course_id, date, status) VALUES (?, ?, ?, ?)',
-                   (request.form.get('student_id'), request.form.get('course_id'), 
-                    request.form.get('date'), request.form.get('status')))
-        db.commit()
-        flash('Log updated!', 'success')
-        return redirect(url_for('academic.attendance'))
+    from db import db_cursor
+    with db_cursor(db) as cursor:
+        if request.method == 'POST' and current_user.role == 'teacher':
+            cursor.execute('INSERT INTO attendance (student_id, course_id, date, status) VALUES (%s, %s, %s, %s)',
+                       (request.form.get('student_id'), request.form.get('course_id'), 
+                        request.form.get('date'), request.form.get('status')))
+            db.commit()
+            flash('Log updated!', 'success')
+            return redirect(url_for('academic.attendance'))
 
-    if current_user.role == 'student':
-        logs = db.execute('''
-            SELECT a.*, c.name as course_name FROM attendance a 
-            JOIN courses c ON a.course_id = c.id WHERE a.student_id = ? ORDER BY a.date DESC
-        ''', (current_user.id,)).fetchall()
-    else:
-        logs = db.execute('''
-            SELECT a.*, u.username as student_name, c.name as course_name
-            FROM attendance a 
-            JOIN users u ON a.student_id = u.id 
-            JOIN courses c ON a.course_id = c.id
-            WHERE c.teacher_id = ? ORDER BY a.date DESC
-        ''', (current_user.id,)).fetchall()
+        if current_user.role == 'student':
+            cursor.execute('''
+                SELECT a.*, c.name as course_name FROM attendance a 
+                JOIN courses c ON a.course_id = c.id WHERE a.student_id = %s ORDER BY a.date DESC
+            ''', (current_user.id,))
+            logs = cursor.fetchall()
+        else:
+            cursor.execute('''
+                SELECT a.*, u.username as student_name, c.name as course_name
+                FROM attendance a 
+                JOIN users u ON a.student_id = u.id 
+                JOIN courses c ON a.course_id = c.id
+                WHERE c.teacher_id = %s ORDER BY a.date DESC
+            ''', (current_user.id,))
+            logs = cursor.fetchall()
 
-        
-    students = db.execute("SELECT * FROM users WHERE role = 'student'").fetchall()
-    my_courses = db.execute('SELECT * FROM courses WHERE teacher_id = ?', (current_user.id,)).fetchall()
+            
+        cursor.execute("SELECT * FROM users WHERE role = 'student'")
+        students = cursor.fetchall()
+        cursor.execute('SELECT * FROM courses WHERE teacher_id = %s', (current_user.id,))
+        my_courses = cursor.fetchall()
     return render_template('attendance.html', attendance=logs, courses=my_courses, students=students, user=current_user)
 
 @academic_bp.route('/assignment/<int:assignment_id>/grade', methods=['GET'])
@@ -82,12 +94,17 @@ def attendance():
 def view_submissions(assignment_id):
     if current_user.role not in ['teacher', 'admin']: return redirect(url_for('dashboard.dashboard'))
     db = get_db()
-    assignment = db.execute('SELECT * FROM assignments WHERE id = ?', (assignment_id,)).fetchone()
-    course = db.execute('SELECT * FROM courses WHERE id = ?', (assignment['course_id'],)).fetchone()
-    submissions = db.execute('''
-        SELECT s.*, u.username as student_name FROM submissions s 
-        JOIN users u ON s.student_id = u.id WHERE s.assignment_id = ?
-    ''', (assignment_id,)).fetchall()
+    from db import db_cursor
+    with db_cursor(db) as cursor:
+        cursor.execute('SELECT * FROM assignments WHERE id = %s', (assignment_id,))
+        assignment = cursor.fetchone()
+        cursor.execute('SELECT * FROM courses WHERE id = %s', (assignment['course_id'],))
+        course = cursor.fetchone()
+        cursor.execute('''
+            SELECT s.*, u.username as student_name FROM submissions s 
+            JOIN users u ON s.student_id = u.id WHERE s.assignment_id = %s
+        ''', (assignment_id,))
+        submissions = cursor.fetchall()
     return render_template('grading_view.html', assignment=assignment, course=course, submissions=submissions, user=current_user)
 
 @academic_bp.route('/assignment/<int:assignment_id>/submission/<int:submission_id>/grade', methods=['POST'])
@@ -96,33 +113,38 @@ def grade_submission(assignment_id, submission_id):
     if current_user.role not in ['teacher', 'admin']: return redirect(url_for('dashboard.dashboard'))
     
     db = get_db()
-    sub = db.execute('SELECT * FROM submissions WHERE id = ?', (submission_id,)).fetchone()
-    assign = db.execute('SELECT * FROM assignments WHERE id = ?', (assignment_id,)).fetchone()
-    
-    grade = float(request.form.get('grade', 0))
-    if not (0 <= grade <= 100):
-        flash('Grade must be between 0 and 100.', 'error')
-        return redirect(url_for('academic.view_submissions', assignment_id=assignment_id))
+    from db import db_cursor
+    with db_cursor(db) as cursor:
+        cursor.execute('SELECT * FROM submissions WHERE id = %s', (submission_id,))
+        sub = cursor.fetchone()
+        cursor.execute('SELECT * FROM assignments WHERE id = %s', (assignment_id,))
+        assign = cursor.fetchone()
+        
+        grade = float(request.form.get('grade', 0))
+        if not (0 <= grade <= 100):
+            flash('Grade must be between 0 and 100.', 'error')
+            return redirect(url_for('academic.view_submissions', assignment_id=assignment_id))
 
-    feedback = request.form.get('feedback')
+        feedback = request.form.get('feedback')
 
-    
-    db.execute('UPDATE submissions SET grade = ?, feedback = ? WHERE id = ?', (grade, feedback, submission_id))
-    
-    # Sync to main grades table
-    existing = db.execute('SELECT id FROM grades WHERE student_id = ? AND course_id = ? AND grade_type = ?',
-                           (sub['student_id'], assign['course_id'], f"Assignment: {assign['title']}")).fetchone()
-    
-    if existing:
-        db.execute('UPDATE grades SET score = ? WHERE id = ?', (grade, existing['id']))
-    else:
-        db.execute('INSERT INTO grades (student_id, course_id, score, grade_type) VALUES (?, ?, ?, ?)',
-                   (sub['student_id'], assign['course_id'], grade, f"Assignment: {assign['title']}"))
-    
-    # Add Notification
-    add_notification(db, sub['student_id'], f"Your work for '{assign['title']}' has been graded: {grade}%", 'success')
-    
-    db.commit()
+        
+        cursor.execute('UPDATE submissions SET grade = %s, feedback = %s WHERE id = %s', (grade, feedback, submission_id))
+        
+        # Sync to main grades table
+        cursor.execute('SELECT id FROM grades WHERE student_id = %s AND course_id = %s AND grade_type = %s',
+                               (sub['student_id'], assign['course_id'], f"Assignment: {assign['title']}"))
+        existing = cursor.fetchone()
+        
+        if existing:
+            cursor.execute('UPDATE grades SET score = %s WHERE id = %s', (grade, existing['id']))
+        else:
+            cursor.execute('INSERT INTO grades (student_id, course_id, score, grade_type) VALUES (%s, %s, %s, %s)',
+                       (sub['student_id'], assign['course_id'], grade, f"Assignment: {assign['title']}"))
+        
+        # Add Notification
+        add_notification(db, sub['student_id'], f"Your work for '{assign['title']}' has been graded: {grade}%", 'success')
+        
+        db.commit()
     flash('Grade assigned and student notified!', 'success')
     return redirect(url_for('academic.view_submissions', assignment_id=assignment_id))
 
@@ -133,23 +155,29 @@ def download_student_report(student_id):
     if current_user.role not in ['teacher', 'admin']: return redirect(url_for('dashboard.dashboard'))
     
     db = get_db()
-    student = db.execute('SELECT * FROM users WHERE id = ?', (student_id,)).fetchone()
-    
-    # Get Grades
-    grades_data = db.execute('''
-        SELECT c.name, AVG(g.score) as avg_score 
-        FROM grades g JOIN courses c ON g.course_id = c.id 
-        WHERE g.student_id = ? GROUP BY c.id
-    ''', (student_id,)).fetchall()
-    
-    # Get Attendance
-    attendance_summary = db.execute('''
-        SELECT status, COUNT(*) as count FROM attendance WHERE student_id = ? GROUP BY status
-    ''', (student_id,)).fetchall()
-    
-    # Get Remarks
-    remarks_row = db.execute('SELECT * FROM remarks WHERE student_id = ? ORDER BY created_at DESC', (student_id,)).fetchone()
-    remarks_data = dict(remarks_row) if remarks_row else {}
+    from db import db_cursor
+    with db_cursor(db) as cursor:
+        cursor.execute('SELECT * FROM users WHERE id = %s', (student_id,))
+        student = cursor.fetchone()
+        
+        # Get Grades
+        cursor.execute('''
+            SELECT c.name, AVG(g.score) as avg_score 
+            FROM grades g JOIN courses c ON g.course_id = c.id 
+            WHERE g.student_id = %s GROUP BY c.id, c.name
+        ''', (student_id,))
+        grades_data = cursor.fetchall()
+        
+        # Get Attendance
+        cursor.execute('''
+            SELECT status, COUNT(*) as count FROM attendance WHERE student_id = %s GROUP BY status
+        ''', (student_id,))
+        attendance_summary = cursor.fetchall()
+        
+        # Get Remarks
+        cursor.execute('SELECT * FROM remarks WHERE student_id = %s ORDER BY created_at DESC', (student_id,))
+        remarks_row = cursor.fetchone()
+        remarks_data = dict(remarks_row) if remarks_row else {}
 
     pdf_buffer = generate_student_report_card(current_app.config['UNIVERSITY_NAME'], student, grades_data, attendance_summary, remarks_data)
 
@@ -167,27 +195,33 @@ def download_batch_reports():
     if current_user.role not in ['teacher', 'admin']: return redirect(url_for('dashboard.dashboard'))
     
     db = get_db()
-    students = db.execute("SELECT * FROM users WHERE role = 'student'").fetchall()
-    
-    zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(zip_buffer, 'w') as zf:
-        for student in students:
-            # Re-fetch data for each
-            grades_data = db.execute('''
-                SELECT c.name, AVG(g.score) as avg_score 
-                FROM grades g JOIN courses c ON g.course_id = c.id 
-                WHERE g.student_id = ? GROUP BY c.id
-            ''', (student['id'],)).fetchall()
-            
-            attendance_summary = db.execute('''
-                SELECT status, COUNT(*) as count FROM attendance WHERE student_id = ? GROUP BY status
-            ''', (student['id'],)).fetchall()
-            
-            remarks_row = db.execute('SELECT * FROM remarks WHERE student_id = ? ORDER BY created_at DESC', (student['id'],)).fetchone()
-            remarks_data = dict(remarks_row) if remarks_row else {}
+    from db import db_cursor
+    with db_cursor(db) as cursor:
+        cursor.execute("SELECT * FROM users WHERE role = 'student'")
+        students = cursor.fetchall()
+        
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w') as zf:
+            for student in students:
+                # Re-fetch data for each
+                cursor.execute('''
+                    SELECT c.name, AVG(g.score) as avg_score 
+                    FROM grades g JOIN courses c ON g.course_id = c.id 
+                    WHERE g.student_id = %s GROUP BY c.id, c.name
+                ''', (student['id'],))
+                grades_data = cursor.fetchall()
+                
+                cursor.execute('''
+                    SELECT status, COUNT(*) as count FROM attendance WHERE student_id = %s GROUP BY status
+                ''', (student['id'],))
+                attendance_summary = cursor.fetchall()
+                
+                cursor.execute('SELECT * FROM remarks WHERE student_id = %s ORDER BY created_at DESC', (student['id'],))
+                remarks_row = cursor.fetchone()
+                remarks_data = dict(remarks_row) if remarks_row else {}
 
-            pdf_buffer = generate_student_report_card(current_app.config['UNIVERSITY_NAME'], student, grades_data, attendance_summary, remarks_data)
-            zf.writestr(f"Report_Card_{student['username']}.pdf", pdf_buffer.getvalue())
+                pdf_buffer = generate_student_report_card(current_app.config['UNIVERSITY_NAME'], student, grades_data, attendance_summary, remarks_data)
+                zf.writestr(f"Report_Card_{student['username']}.pdf", pdf_buffer.getvalue())
 
     zip_buffer.seek(0)
     return send_file(
@@ -208,16 +242,19 @@ def save_remarks():
     improvement = request.form.get('improvement_areas')
     
     db = get_db()
-    existing = db.execute('SELECT id FROM remarks WHERE student_id = ? AND term = ?', (student_id, term)).fetchone()
-    
-    if existing:
-        db.execute('UPDATE remarks SET remarks = ?, improvement_areas = ? WHERE id = ?',
-                   (remarks, improvement, existing['id']))
-    else:
-        db.execute('INSERT INTO remarks (student_id, teacher_id, term, remarks, improvement_areas) VALUES (?, ?, ?, ?, ?)',
-                   (student_id, current_user.id, term, remarks, improvement))
-    
-    db.commit()
+    from db import db_cursor
+    with db_cursor(db) as cursor:
+        cursor.execute('SELECT id FROM remarks WHERE student_id = %s AND term = %s', (student_id, term))
+        existing = cursor.fetchone()
+        
+        if existing:
+            cursor.execute('UPDATE remarks SET remarks = %s, improvement_areas = %s WHERE id = %s',
+                       (remarks, improvement, existing['id']))
+        else:
+            cursor.execute('INSERT INTO remarks (student_id, teacher_id, term, remarks, improvement_areas) VALUES (%s, %s, %s, %s, %s)',
+                       (student_id, current_user.id, term, remarks, improvement))
+        
+        db.commit()
     flash('Performance evaluation updated!', 'success')
     return redirect(request.referrer)
 

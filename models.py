@@ -1,6 +1,5 @@
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash
-import sqlite3
 
 class User(UserMixin):
     def __init__(self, id, username, password_hash, role):
@@ -15,18 +14,23 @@ class User(UserMixin):
     @staticmethod
     def get(user_id):
         from db import get_db
+        from db import db_cursor
         db = get_db()
-        user = db.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-        if user:
-            return User(user['id'], user['username'], user['password_hash'], user['role'])
+        with db_cursor(db) as cursor:
+            cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+            user = cursor.fetchone()
+            if user:
+                return User(user['id'], user['username'], user['password_hash'], user['role'])
         return None
 
     @staticmethod
     def get_by_username(username):
         from db import get_db
+        from db import db_cursor
         db = get_db()
-        user = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-        if user:
-            return User(user['id'], user['username'], user['password_hash'], user['role'])
+        with db_cursor(db) as cursor:
+            cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
+            user = cursor.fetchone()
+            if user:
+                return User(user['id'], user['username'], user['password_hash'], user['role'])
         return None
-

@@ -16,6 +16,8 @@ from routes.courses import courses_bp
 from routes.academic import academic_bp
 from routes.messages import messages_bp
 from routes.admissions import admissions_bp
+from routes.exam_predictor import exam_predictor_bp
+from routes.classrooms import classrooms_bp
 from flask_mail import Message
 from flask_babel import _
 from flask import session, request
@@ -70,13 +72,18 @@ app.register_blueprint(courses_bp)
 app.register_blueprint(academic_bp)
 app.register_blueprint(messages_bp)
 app.register_blueprint(admissions_bp)
+app.register_blueprint(exam_predictor_bp)
+app.register_blueprint(classrooms_bp)
 
 @app.context_processor
 def inject_unread_count():
     try:
         if current_user.is_authenticated:
+            from db import db_cursor
             db = get_db()
-            count = db.execute('SELECT COUNT(*) FROM messages WHERE recipient_id = ? AND is_read = 0', (current_user.id,)).fetchone()[0]
+            with db_cursor(db) as cursor:
+                cursor.execute('SELECT COUNT(*) FROM messages WHERE recipient_id = %s AND is_read = 0', (current_user.id,))
+                count = cursor.fetchone()[0]
             return dict(unread_messages_count=count)
     except Exception as e:
         print(f"Context processor error: {e}")
@@ -123,11 +130,10 @@ def pretty_date_filter(date_str):
         return str(date_str)
 
 @app.route('/')
-
 def index():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.dashboard'))
-    return redirect(url_for('auth.login'))
+    return render_template('landing.html')
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -143,87 +149,98 @@ def seed_demo_data(db):
     print("Seeding demo data...")
     import random
     
-    # 1. Create Teachers
-    teachers = [
-        ('mr_smith', 'password', 'Sarah Smith'),
-        ('ms_jones', 'password', 'Emily Jones'),
-        ('dr_brown', 'password', 'Michael Brown')
-    ]
-    
-    teacher_ids = []
-    for username, pwd, name in teachers:
-        cursor = db.execute('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-                   (username, generate_password_hash(pwd), 'teacher'))
-        teacher_ids.append(cursor.lastrowid)
-
-    # 2. Create Courses
-    courses = [
-        ('Mathematics 101', teacher_ids[0], 'Mon/Wed 10:00 AM'),
-        ('History 201', teacher_ids[1], 'Tue/Thu 2:00 PM'),
-        ('Computer Science', teacher_ids[2], 'Fri 1:00 PM')
-    ]
-    
-    course_ids = []
-    for name, t_id, schedule in courses:
-        cursor = db.execute('INSERT INTO courses (name, teacher_id, schedule) VALUES (?, ?, ?)',
-                          (name, t_id, schedule))
-        course_ids.append(cursor.lastrowid)
-
-    # 3. Create Students
-    students_data = [
-        ('alice', 'Alice Johnson', 'alice@example.com'),
-        ('bob', 'Bob Wilson', 'bob@example.com'),
-        ('charlie', 'Charlie Davis', 'charlie@example.com'),
-        ('david', 'David Miller', 'david@example.com')
-    ]
-    
-    for i, (username, name, email) in enumerate(students_data):
-        pwd_hash = generate_password_hash('password')
-        cursor = db.execute('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-                   (username, pwd_hash, 'student'))
-        user_id = cursor.lastrowid
+    from db import db_cursor
+    with db_cursor(db) as cursor:
+        # 1. Create Teachers
+        teachers = [
+            ('mr_smith', 'password', 'Sarah Smith'),
+            ('ms_jones', 'password', 'Emily Jones'),
+            ('dr_brown', 'password', 'Michael Brown')
+        ]
         
-        # Details
-        db.execute('''INSERT INTO student_details 
-            (user_id, full_name, email, admission_number, gender) 
-            VALUES (?, ?, ?, ?, ?)''',
-            (user_id, name, email, f"ADM{user_id:04d}", random.choice(['Male', 'Female'])))
+        teacher_ids = []
+        for username, pwd, name in teachers:
+            cursor.execute('INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s) RETURNING id',
+                       (username, generate_password_hash(pwd), 'teacher'))
+            teacher_ids.append(cursor.fetchone()[0])
+
+        # 2. Create Courses
+        courses = [
+            ('Mathematics 101', teacher_ids[0], 'Mon/Wed 10:00 AM'),
+            ('History 201', teacher_ids[1], 'Tue/Thu 2:00 PM'),
+            ('Computer Science', teacher_ids[2], 'Fri 1:00 PM')
+        ]
         
-        # Random Enrollments (Each student in 2 courses)
-        for c_id in random.sample(course_ids, 2):
-            db.execute('INSERT INTO enrollments (student_id, course_id) VALUES (?, ?)', (user_id, c_id))
+        course_ids = []
+        for name, t_id, schedule in courses:
+            cursor.execute('INSERT INTO courses (name, teacher_id, schedule) VALUES (%s, %s, %s) RETURNING id',
+                              (name, t_id, schedule))
+            course_ids.append(cursor.fetchone()[0])
+
+        # 3. Create Students
+        students_data = [
+            ('alice', 'Alice Johnson', 'alice@example.com'),
+            ('bob', 'Bob Wilson', 'bob@example.com'),
+            ('charlie', 'Charlie Davis', 'charlie@example.com'),
+            ('david', 'David Miller', 'david@example.com')
+        ]
+        
+        for i, (username, name, email) in enumerate(students_data):
+            pwd_hash = generate_password_hash('password')
+            cursor.execute('INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s) RETURNING id',
+                       (username, pwd_hash, 'student'))
+            user_id = cursor.fetchone()[0]
             
-            # Add some sample grades
-            db.execute('INSERT INTO grades (student_id, course_id, score, grade_type) VALUES (?, ?, ?, ?)',
-                       (user_id, c_id, random.randint(75, 98), 'Assignment'))
+            # Details
+            cursor.execute('''INSERT INTO student_details 
+                (user_id, full_name, email, admission_number, gender) 
+                VALUES (%s, %s, %s, %s, %s)''',
+                (user_id, name, email, f"ADM{user_id:04d}", random.choice(['Male', 'Female'])))
+            
+            # Random Enrollments (Each student in 2 courses)
+            for c_id in random.sample(course_ids, 2):
+                cursor.execute('INSERT INTO enrollments (student_id, course_id) VALUES (%s, %s)', (user_id, c_id))
+                
+                # Add some sample grades
+                cursor.execute('INSERT INTO grades (student_id, course_id, score, grade_type) VALUES (%s, %s, %s, %s)',
+                           (user_id, c_id, random.randint(75, 98), 'Assignment'))
     
     db.commit()
     print("Demo data seeded successfully.")
 
 # Initialize DB structure and default data on startup (Required for Render/Gunicorn)
-with app.app_context():
-    # Create tables
-    init_db(app)
-    
-    db = get_db()
-    
-    # Create default admin if not exists
-    if not db.execute('SELECT * FROM users WHERE username = ?', ('admin',)).fetchone():
-        db.execute('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-                   ('admin', generate_password_hash('admin123'), 'admin'))
-        db.commit()
+try:
+    with app.app_context():
+        # Create tables
+        init_db(app)
+        
+        db = get_db()
+        from db import db_cursor
+        with db_cursor(db) as cursor:
+            # Create default admin if not exists
+            cursor.execute('SELECT * FROM users WHERE username = %s', ('admin',))
+            if not cursor.fetchone():
+                cursor.execute('INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)',
+                           ('admin', generate_password_hash('admin123'), 'admin'))
+                db.commit()
 
-    # Create Group Chat system user (ID 0)
-    try:
-        if not db.execute('SELECT * FROM users WHERE id = 0').fetchone():
-            db.execute("INSERT INTO users (id, username, password_hash, role) VALUES (0, 'Group Chat', 'system', 'group')")
-            db.commit()
-    except Exception as e:
-        print(f"Group chat setup warning: {e}")
+            # Create Group Chat system user (ID 0)
+            try:
+                cursor.execute('SELECT * FROM users WHERE id = %s', (0,))
+                if not cursor.fetchone():
+                    cursor.execute("INSERT INTO users (id, username, password_hash, role) VALUES (%s, %s, %s, %s)", (0, 'Group Chat', 'system', 'group'))
+                    db.commit()
+            except Exception as e:
+                print(f"Group chat setup warning: {e}")
 
-    # NEW: Auto-seed if database has no students
-    if not db.execute('SELECT 1 FROM users WHERE role = ?', ('student',)).fetchone():
-        seed_demo_data(db)
+            # NEW: Auto-seed if database has no students
+            cursor.execute('SELECT 1 FROM users WHERE role = %s', ('student',))
+            if not cursor.fetchone():
+                seed_demo_data(db)
+except Exception as startup_err:
+    print(f"CRITICAL STARTUP ERROR: {startup_err}")
+    # We let it pass so gunicorn can at least start the app 
+    # and we can potentially see the error through the 500 handler if it reaches it.
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

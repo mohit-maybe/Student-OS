@@ -24,8 +24,10 @@ def calculate_gpa(score):
     return 0.0
 
 def add_notification(db, user_id, message, n_type='info'):
-    db.execute('INSERT INTO notifications (user_id, message, type) VALUES (?, ?, ?)',
-               (user_id, message, n_type))
+    from db import db_cursor
+    with db_cursor(db) as cursor:
+        cursor.execute('INSERT INTO notifications (user_id, message, type) VALUES (%s, %s, %s)',
+                   (user_id, message, n_type))
     db.commit()
 
 

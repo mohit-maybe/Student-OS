@@ -111,6 +111,22 @@
                 {% endif %}
             </div>
 
+            {% if user.role == 'student' %}
+            <div class="stat-card" style="background: linear-gradient(135deg, var(--primary-color), #818cf8); color: white; border: none; cursor: pointer; transition: transform 0.3s;" onclick="openDashboardQr()">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="margin: 0; color: white; display: flex; align-items: center; gap: 0.5rem;">
+                            <i data-lucide="qr-code"></i> Attendance QR
+                        </h3>
+                        <p style="margin: 0.5rem 0 0 0; opacity: 0.9; font-size: 0.9rem;">Click to view your personal scanner code</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.2); padding: 0.75rem; border-radius: 12px;">
+                        <i data-lucide="chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="stat-card">
                 <h3>System Notifications</h3>
                 {% if not notifications %}
@@ -328,4 +344,36 @@
         }]
     });
 </script>
+
+{% if user.role == 'student' %}
+<!-- Student QR Modal -->
+<div id="dashQrModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.8); z-index: 5000; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+    <div class="stat-card" style="width: 100%; max-width: 400px; text-align: center; padding: 3rem; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+        <h2 style="margin: 0;">My Attendance QR</h2>
+        <p style="color: var(--text-muted); margin: 0.5rem 0 2rem 0;">Scan this at the start of class</p>
+        
+        <div style="background: white; padding: 1.5rem; border-radius: 20px; display: inline-block; box-shadow: 0 15px 35px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <img src="/students/{{ user.id }}/qr" alt="Attendance QR" style="width: 220px; height: 220px; display: block;">
+        </div>
+
+        <div style="display: flex; gap: 1rem;">
+            <button onclick="document.getElementById('dashQrModal').style.display='none'" class="btn" style="flex: 1; background: var(--bg-secondary);">Close</button>
+            <a href="/students/{{ user.id }}/qr" download="My_Attendance_QR.png" class="btn btn-primary" style="flex: 1;">Download</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openDashboardQr() {
+        document.getElementById('dashQrModal').style.display = 'flex';
+    }
+</script>
+
+<style>
+    @keyframes slideUp {
+        from { transform: translateY(30px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+</style>
+{% endif %}
 {% endblock %}
