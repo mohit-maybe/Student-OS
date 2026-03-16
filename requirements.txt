@@ -26,3 +26,5 @@ itsdangerous
 click
 colorama
 pytz
+qrcode[pil]
+openpyxl
