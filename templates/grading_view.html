@@ -5,24 +5,25 @@
     {% include "sidebar.html" %}
 
     <main class="main-content">
-        <div class="header">
-            <div>
+        <div class="header" style="flex-wrap: wrap; gap: 1rem; align-items: flex-start;">
+            <div style="flex: 1; min-width: 250px;">
                 <a href="{{ url_for('courses.course_details', course_id=course.id) }}"
                     style="color: var(--text-muted); text-decoration: none; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                     <i data-lucide="arrow-left" width="16"></i> Back to Course
                 </a>
-                <h2>Grading: {{ assignment.title }}</h2>
-                <p style="color: var(--text-muted)">{{ submissions|length }} / {{ total_students }} Submissions</p>
+                <h2 style="font-size: clamp(1.5rem, 4vw, 2rem); margin: 0;">Grading: {{ assignment.title }}</h2>
+                <p style="color: var(--text-muted); margin-top: 0.5rem;">{{ submissions|length }} / {{ total_students }} Submissions</p>
             </div>
         </div>
 
-        <div class="stat-card">
+        <div class="stat-card" style="padding: 1.5rem; overflow: hidden;">
             {% if not submissions %}
             <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
                 No submissions yet.
             </div>
             {% else %}
-            <table>
+            <div class="table-container" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <table style="min-width: 900px;">
                 <thead>
                     <tr>
                         <th>Student</th>
@@ -81,12 +82,13 @@
                             <td style="vertical-align: top; padding-top: 1rem;">
                                 <button type="submit" class="btn-primary"
                                     style="padding: 0.6rem 1rem; width: auto;">Save Grade</button>
-                            </td>
-                        </form>
+                            </form>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
-            </table>
+                </table>
+            </div>
             {% endif %}
         </div>
     </main>

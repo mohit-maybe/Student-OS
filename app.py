@@ -18,6 +18,7 @@ from routes.messages import messages_bp
 from routes.admissions import admissions_bp
 from routes.exam_predictor import exam_predictor_bp
 from routes.classrooms import classrooms_bp
+from routes.staff import staff_bp
 from flask_mail import Message
 from flask_babel import _
 from flask import session, request
@@ -74,6 +75,7 @@ app.register_blueprint(messages_bp)
 app.register_blueprint(admissions_bp)
 app.register_blueprint(exam_predictor_bp)
 app.register_blueprint(classrooms_bp)
+app.register_blueprint(staff_bp)
 
 @app.context_processor
 def inject_unread_count():

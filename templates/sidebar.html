@@ -33,6 +33,15 @@
                 <span>{{ _('Classrooms') }}</span>
             </a>
         </li>
+        {% if user.role == 'admin' %}
+        <li>
+            <a href="{{ url_for('staff.list_staff') }}"
+                class="{{ 'active' if 'staff' in request.endpoint else '' }}">
+                <i data-lucide="shield-check"></i>
+                <span>Staff Management</span>
+            </a>
+        </li>
+        {% endif %}
         {% endif %}
         <li>
             <a href="{{ url_for('courses.courses') }}"

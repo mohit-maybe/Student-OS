@@ -5,16 +5,16 @@
     {% include "sidebar.html" %}
 
     <main class="main-content">
-        <div class="header">
-            <div>
+        <div class="header" style="flex-wrap: wrap; gap: 1.5rem; align-items: flex-start;">
+            <div style="flex: 1; min-width: 250px;">
                 <span class="header-pretitle">Overview & Analytics</span>
                 <h1 class="header-title">Welcome back, {{ user.username }}</h1>
-                <p style="color: var(--text-muted); margin-top: 0.75rem; font-weight: 500; font-size: 1.1rem;">
+                <p style="color: var(--text-muted); margin-top: 0.75rem; font-weight: 500; font-size: 1.1rem; max-width: 600px;">
                     You are currently managing <b>{{ stats.card2_value }}</b> {{ stats.card2_label | lower }} with a
                     system status of <span style="color: var(--success-color); font-weight: 800;">OPTIMAL</span>.
                 </p>
             </div>
-            <div class="user-pill staggered-entry">
+            <div class="user-pill staggered-entry" style="margin-left: auto;">
                 <div class="avatar-sm">
                     {{ user.username[0]|upper }}
                 </div>
@@ -53,7 +53,7 @@
             </div>
         </div>
 
-        <div class="stats-grid stagger-container" style="grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));">
+        <div class="stats-grid stagger-container" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
             <div class="stat-card">
                 <h3>Performance Overview</h3>
                 <div style="height: 300px;">

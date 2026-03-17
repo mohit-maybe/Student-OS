@@ -170,3 +170,13 @@ CREATE TABLE IF NOT EXISTS revision_plans (
     FOREIGN KEY (student_id) REFERENCES users (id),
     FOREIGN KEY (topic_id) REFERENCES predicted_topics (id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS teacher_details (
+    user_id INTEGER PRIMARY KEY,
+    full_name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    mobile TEXT,
+    department TEXT,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id)
+);
