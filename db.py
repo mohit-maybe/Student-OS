@@ -7,13 +7,18 @@ def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db_url = os.getenv('DATABASE_URL')
-        if db_url and db_url.startswith('postgresql'):
+        if db_url and ('postgres' in db_url):
             try:
+                # Normalizing for psycopg2 (Heroku/Render use postgres://)
+                if db_url.startswith('postgres://'):
+                    db_url = db_url.replace('postgres://', 'postgresql://', 1)
+                
                 import psycopg2
                 from psycopg2.extras import DictCursor
                 db = g._database = psycopg2.connect(db_url, cursor_factory=DictCursor)
+                print("Successfully connected to PostgreSQL")
             except (ImportError, Exception) as e:
-                print(f"Postgres connection failed, falling back to SQLite: {e}")
+                print(f"Postgres connection failed: {e}")
                 db_url = None
         
         if not db_url:

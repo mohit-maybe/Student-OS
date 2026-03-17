@@ -210,6 +210,19 @@ def seed_demo_data(db):
     db.commit()
     print("Demo data seeded successfully.")
 
+# Thread-safe initialization flag
+_db_initialized = False
+
+@app.before_request
+def safe_init():
+    global _db_initialized
+    if not _db_initialized:
+        # Avoid running in debug reloader's main process
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not app.debug:
+            print("🚀 Performing one-time lazy startup initialization...")
+            startup_init()
+        _db_initialized = True
+
 def startup_init():
     """Initializes the database and default data safely."""
     with app.app_context():
@@ -220,35 +233,34 @@ def startup_init():
             db = get_db()
             from db import db_cursor
             with db_cursor(db) as cursor:
-                # Create default admin if not exists
+                # 1. Create default admin if not exists
                 cursor.execute('SELECT id FROM users WHERE username = %s', ('admin',))
                 if not cursor.fetchone():
                     cursor.execute('INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)',
                                ('admin', generate_password_hash('admin123'), 'admin'))
                     db.commit()
 
-                # Create Group Chat system user (ID 0)
+                # 2. Create Group Chat system user (ID 0)
                 try:
                     cursor.execute('SELECT id FROM users WHERE id = %s', (0,))
                     if not cursor.fetchone():
-                        # Use 0 if possible (standard for system users in this app)
                         cursor.execute("INSERT INTO users (id, username, password_hash, role) VALUES (%s, %s, %s, %s)", 
                                    (0, 'Group Chat', 'system', 'group'))
                         db.commit()
                 except Exception as e:
                     print(f"Group chat setup warning: {e}")
 
-                # Auto-seed if database has no students
+                # 3. Auto-seed if database has no students
                 cursor.execute("SELECT 1 FROM users WHERE role = 'student' LIMIT 1")
                 if not cursor.fetchone():
+                    print("📊 Seeding initial demo data...")
                     seed_demo_data(db)
-                    
+            
+            print("✅ Startup initialization complete.")
         except Exception as startup_err:
-            print(f"CRITICAL STARTUP ERROR: {startup_err}")
-
-# Only run once at startup
-if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not app.debug:
-    startup_init()
+            print(f"❌ CRITICAL STARTUP ERROR: {startup_err}")
+            import traceback
+            traceback.print_exc()
     # We let it pass so gunicorn can at least start the app 
     # and we can potentially see the error through the 500 handler if it reaches it.
 
