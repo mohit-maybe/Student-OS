@@ -210,37 +210,45 @@ def seed_demo_data(db):
     db.commit()
     print("Demo data seeded successfully.")
 
-# Initialize DB structure and default data on startup (Required for Render/Gunicorn)
-try:
+def startup_init():
+    """Initializes the database and default data safely."""
     with app.app_context():
-        # Create tables
-        init_db(app)
-        
-        db = get_db()
-        from db import db_cursor
-        with db_cursor(db) as cursor:
-            # Create default admin if not exists
-            cursor.execute('SELECT * FROM users WHERE username = %s', ('admin',))
-            if not cursor.fetchone():
-                cursor.execute('INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)',
-                           ('admin', generate_password_hash('admin123'), 'admin'))
-                db.commit()
-
-            # Create Group Chat system user (ID 0)
-            try:
-                cursor.execute('SELECT * FROM users WHERE id = %s', (0,))
+        try:
+            # Create tables
+            init_db(app)
+            
+            db = get_db()
+            from db import db_cursor
+            with db_cursor(db) as cursor:
+                # Create default admin if not exists
+                cursor.execute('SELECT id FROM users WHERE username = %s', ('admin',))
                 if not cursor.fetchone():
-                    cursor.execute("INSERT INTO users (id, username, password_hash, role) VALUES (%s, %s, %s, %s)", (0, 'Group Chat', 'system', 'group'))
+                    cursor.execute('INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)',
+                               ('admin', generate_password_hash('admin123'), 'admin'))
                     db.commit()
-            except Exception as e:
-                print(f"Group chat setup warning: {e}")
 
-            # NEW: Auto-seed if database has no students
-            cursor.execute('SELECT 1 FROM users WHERE role = %s', ('student',))
-            if not cursor.fetchone():
-                seed_demo_data(db)
-except Exception as startup_err:
-    print(f"CRITICAL STARTUP ERROR: {startup_err}")
+                # Create Group Chat system user (ID 0)
+                try:
+                    cursor.execute('SELECT id FROM users WHERE id = %s', (0,))
+                    if not cursor.fetchone():
+                        # Use 0 if possible (standard for system users in this app)
+                        cursor.execute("INSERT INTO users (id, username, password_hash, role) VALUES (%s, %s, %s, %s)", 
+                                   (0, 'Group Chat', 'system', 'group'))
+                        db.commit()
+                except Exception as e:
+                    print(f"Group chat setup warning: {e}")
+
+                # Auto-seed if database has no students
+                cursor.execute("SELECT 1 FROM users WHERE role = 'student' LIMIT 1")
+                if not cursor.fetchone():
+                    seed_demo_data(db)
+                    
+        except Exception as startup_err:
+            print(f"CRITICAL STARTUP ERROR: {startup_err}")
+
+# Only run once at startup
+if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not app.debug:
+    startup_init()
     # We let it pass so gunicorn can at least start the app 
     # and we can potentially see the error through the 500 handler if it reaches it.
 
