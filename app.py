@@ -250,11 +250,15 @@ def startup_init():
                 except Exception as e:
                     print(f"Group chat setup warning: {e}")
 
-                # 3. Auto-seed if database has no students
-                cursor.execute("SELECT 1 FROM users WHERE role = 'student' LIMIT 1")
-                if not cursor.fetchone():
-                    print("📊 Seeding initial demo data...")
-                    seed_demo_data(db)
+                # 3. Auto-seed if requested and database has no students
+                should_seed = os.getenv('SEED_DEMO', 'true').lower() == 'true'
+                if should_seed:
+                    cursor.execute("SELECT 1 FROM users WHERE role = 'student' LIMIT 1")
+                    if not cursor.fetchone():
+                        print("📊 Seeding initial demo data...")
+                        seed_demo_data(db)
+                else:
+                    print("ℹ️ Auto-seeding is disabled via environment variable.")
             
             print("✅ Startup initialization complete.")
         except Exception as startup_err:
