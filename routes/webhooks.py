@@ -8,9 +8,9 @@ webhooks_bp = Blueprint('webhooks', __name__, url_prefix='/api/webhooks')
 @csrf.exempt
 def tally_webhook():
     try:
-        data = request.json
+        data = request.get_json(force=True, silent=True)
         if not data:
-            return jsonify({'error': 'No JSON payload provided'}), 400
+            return jsonify({'error': 'No JSON payload provided or invalid JSON'}), 400
 
         # Tally payload has 'data' -> 'fields'
         event_data = data.get('data', {})
@@ -27,7 +27,8 @@ def tally_webhook():
         # Safely extract details from Tally fields
         if isinstance(fields, list):
             for field in fields:
-                label = field.get('label', '').strip()
+                raw_label = field.get('label')
+                label = str(raw_label).strip() if raw_label is not None else ''
                 value = field.get('value', '')
                 
                 # Because the structure of the value could theoretically be an array or object, we ensure string conversion for standard fields
@@ -115,5 +116,7 @@ def tally_webhook():
         return jsonify({'message': 'Webhook processed and email sent successfully'}), 200
 
     except Exception as e:
-        print(f"[Webhook] Error processing Tally webhook: {e}")
-        return jsonify({'error': 'Internal server error processing webhook'}), 500
+        import traceback
+        tb = traceback.format_exc()
+        print(f"[Webhook] EXCEPTION: {tb}")
+        return jsonify({'error': str(e), 'traceback': tb}), 500
