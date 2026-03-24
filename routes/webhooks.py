@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from extensions import mail, csrf
 from flask_mail import Message
 import requests
+import os
 
 webhooks_bp = Blueprint('webhooks', __name__, url_prefix='/api/webhooks')
 
