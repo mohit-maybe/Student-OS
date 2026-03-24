@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from extensions import mail, csrf
 from flask_mail import Message
+import requests
 
 webhooks_bp = Blueprint('webhooks', __name__, url_prefix='/api/webhooks')
 
@@ -61,37 +62,42 @@ def tally_webhook():
             
         print(f"[Webhook] Sending Calendly link to {email} for {school_name}...")
             
+        # Send email logic - Fallback to Google Apps Script if SMTP is blocked
+        email_api_url = os.environ.get("EMAIL_API_URL")
+
         # 1. Send the internal notification email to the admin
         admin_email = current_app.config.get('MAIL_USERNAME')
+        admin_subject = f"New Lead: {school_name} just filled the Onboarding Form!"
+        admin_html = f"""
+        <div style="font-family: Arial, sans-serif; color: #333;">
+            <h2>New School Onboarding Lead</h2>
+            <p>A new school has just submitted the Tally onboarding form. Here are their complete details:</p>
+            <br>
+            {structured_data_html}
+            <br>
+            <p><strong>Note:</strong> We have automatically sent them an email with your Calendly meeting link!</p>
+        </div>
+        """
+        
         if admin_email:
             try:
-                admin_msg = Message(
-                    subject=f"New Lead: {school_name} just filled the Onboarding Form!",
-                    recipients=[admin_email]
-                )
-                admin_msg.html = f"""
-                <div style="font-family: Arial, sans-serif; color: #333;">
-                    <h2>New School Onboarding Lead</h2>
-                    <p>A new school has just submitted the Tally onboarding form. Here are their complete details:</p>
-                    <br>
-                    {structured_data_html}
-                    <br>
-                    <p><strong>Note:</strong> We have automatically sent them an email with your Calendly meeting link!</p>
-                </div>
-                """
-                mail.send(admin_msg)
+                if email_api_url:
+                    requests.post(email_api_url, json={
+                        "to": admin_email,
+                        "subject": admin_subject,
+                        "htmlBody": admin_html
+                    }, timeout=10)
+                else:
+                    admin_msg = Message(subject=admin_subject, recipients=[admin_email])
+                    admin_msg.html = admin_html
+                    mail.send(admin_msg)
                 print(f"[Webhook] Admin notification sent to {admin_email}.")
             except Exception as admin_err:
                 print(f"[Webhook] Error sending admin notification: {admin_err}")
 
         # 2. Send the Calendly email to the school lead
-        msg = Message(
-            subject="Welcome to Student OS - Let's schedule a discussion!",
-            recipients=[email]
-        )
-        msg.body = f"Hello {contact_name},\n\nThank you for your interest in Student OS for {school_name}!\n\nWe would love to connect with you to discuss how our platform can benefit your institution and answer any questions you might have regarding pricing and features.\n\nPlease schedule a meeting with us at your earliest convenience using the link below:\nhttps://calendly.com/mohitpreets67/discussion-meeting\n\nLooking forward to speaking with you!\n\nBest regards,\nThe Student OS Team"
-        
-        msg.html = f"""
+        school_subject = "Welcome to Student OS - Let's schedule a discussion!"
+        school_html = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
             <p>Hello {contact_name},</p>
             <p>Thank you for your interest in Student OS for <strong>{school_name}</strong>!</p>
@@ -109,8 +115,18 @@ def tally_webhook():
         </div>
         """
         
-        # Send email asynchronously if possible, otherwise synchronously
-        mail.send(msg)
+        if email_api_url:
+            requests.post(email_api_url, json={
+                "to": email,
+                "subject": school_subject,
+                "htmlBody": school_html
+            }, timeout=10)
+        else:
+            msg = Message(subject=school_subject, recipients=[email])
+            msg.body = f"Hello {contact_name},\n\nThank you for your interest in Student OS for {school_name}!\n\nWe would love to connect with you to discuss how our platform can benefit your institution and answer any questions you might have regarding pricing and features.\n\nPlease schedule a meeting with us at your earliest convenience using the link below:\nhttps://calendly.com/mohitpreets67/discussion-meeting\n\nLooking forward to speaking with you!\n\nBest regards,\nThe Student OS Team"
+            msg.html = school_html
+            mail.send(msg)
+            
         print(f"[Webhook] Email sent to {email} successfully.")
         
         return jsonify({'message': 'Webhook processed and email sent successfully'}), 200
