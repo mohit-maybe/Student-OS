@@ -65,6 +65,10 @@ def tally_webhook():
             
         # Send email logic - Fallback to Google Apps Script if SMTP is blocked
         email_api_url = os.environ.get("EMAIL_API_URL", "").strip()
+        print(f"[Webhook] EMAIL_API_URL found: {bool(email_api_url)}")
+        if email_api_url:
+            masked_url = f"{email_api_url[:10]}...{email_api_url[-5:]}" if len(email_api_url) > 15 else "SHORT_URL"
+            print(f"[Webhook] Using relay URL: {masked_url}")
 
         # 1. Send the internal notification email to the admin
         admin_email = current_app.config.get('MAIL_USERNAME')
@@ -120,13 +124,16 @@ def tally_webhook():
         """
         
         if email_api_url:
+            print(f"[Webhook] Attempting HTTP POST to relay for {email}...")
             school_resp = requests.post(email_api_url, json={
                 "to": email,
                 "subject": school_subject,
                 "htmlBody": school_html
-            }, timeout=10)
-            print(f"[Webhook] School relay response: {school_resp.status_code} - {school_resp.text}")
+            }, timeout=15)
+            print(f"[Webhook] School relay status: {school_resp.status_code}")
+            print(f"[Webhook] School relay response body: {school_resp.text[:200]}")
             if school_resp.status_code != 200:
+                print(f"[Webhook] Relay FAILED with status {school_resp.status_code}")
                 return jsonify({'error': 'Email relay failed', 'details': school_resp.text}), 502
         else:
             msg = Message(subject=school_subject, recipients=[email])
