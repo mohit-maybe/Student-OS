@@ -57,9 +57,14 @@
                     <span class="label">Avg. Performance</span>
                     <span class="value">
                         {% if students %}
-                            {% set total_grade = namespace(val=0) %}
-                            {% for s in students %}{% set total_grade.val = total_grade.val + s.avg_grade|float %}{% endfor %}
-                            {{ (total_grade.val / students|length)|round(1) }}%
+                            {% set total_grade = namespace(val=0, count=0) %}
+                            {% for s in students %}
+                                {% if s.avg_grade|float > 0 %}
+                                    {% set total_grade.val = total_grade.val + s.avg_grade|float %}
+                                    {% set total_grade.count = total_grade.count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ (total_grade.val / total_grade.count if total_grade.count > 0 else 0)|round(1) }}%
                         {% else %}0%{% endif %}
                     </span>
                 </div>
@@ -81,6 +86,40 @@
             </div>
         </div>
 
+        {% if user.role == 'student' %}
+        <!-- Student: My Enrolled Courses View -->
+        <div class="table-card-header" style="margin-bottom: 1.5rem; padding-left: 0;">
+            <h3 style="font-size: 1.5rem;">My Enrolled Courses</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Access your learning materials and assignments</p>
+        </div>
+
+        <div class="courses-grid-student">
+            {% for course in enrolled_courses %}
+            <div class="course-pill-card" onclick="window.location.href='{{ url_for('courses.course_details', course_id=course.id) }}'">
+                <div class="pill-icon">
+                    <i data-lucide="book-open"></i>
+                </div>
+                <div class="pill-info">
+                    <h4 class="course-name">{{ course.name }}</h4>
+                    <span class="teacher-name">{{ course.teacher_name }}</span>
+                </div>
+                <div class="pill-stats">
+                    <div class="grade-badge-mini {{ 'grade-high' if course.avg_grade|float >= 80 else 'grade-mid' if course.avg_grade|float >= 60 else 'grade-low' }}">
+                        {{ course.avg_grade }}%
+                    </div>
+                    <i data-lucide="chevron-right" class="chevron"></i>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state-premium" style="width: 100%; grid-column: 1/-1;">
+                <i data-lucide="book-x"></i>
+                <h3>No courses enrolled</h3>
+                <p>You haven't been enrolled in any courses for this class yet.</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Staff: Student Roster Table -->
         <div class="table-card-premium animate-entry">
             <div class="table-card-header">
                 <h3>Student Roster</h3>
@@ -98,8 +137,8 @@
                         <tr>
                             <th>Student</th>
                             <th>Admission ID</th>
-                            <th>Avg Grade</th>
-                            <th>Attendance</th>
+                            <th class="hide-mobile">Avg Grade</th>
+                            <th class="hide-mobile">Attendance</th>
                             <th style="text-align: right;">Actions</th>
                         </tr>
                     </thead>
@@ -111,12 +150,12 @@
                                     <div class="avatar-circle">{{ student.full_name[0] }}</div>
                                     <div class="profile-meta">
                                         <span class="name">{{ student.full_name }}</span>
-                                        <span class="email">{{ student.email }}</span>
+                                        <span class="email hide-mobile">{{ student.email }}</span>
                                     </div>
                                 </div>
                             </td>
                             <td><span class="mono-tag">{{ student.admission_number }}</span></td>
-                            <td>
+                            <td class="hide-mobile">
                                 <div class="grade-indicator">
                                     {% set g = student.avg_grade|float %}
                                     <span class="grade-badge {{ 'grade-high' if g >= 80 else 'grade-mid' if g >= 60 else 'grade-low' }}">
@@ -124,7 +163,7 @@
                                     </span>
                                 </div>
                             </td>
-                            <td>
+                            <td class="hide-mobile">
                                 <div class="attendance-viz">
                                     <div class="progress-track">
                                         <div class="progress-fill" style="width: {{ student.attendance_pct|int }}%"></div>
@@ -155,6 +194,41 @@
                 </table>
             </div>
         </div>
+
+        <div class="table-card-premium animate-entry" style="margin-top: 3rem;">
+            <div class="table-card-header">
+                <h3>Classroom Grades Matrix</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Overview of student performance across all subjects</p>
+            </div>
+            <div class="table-responsive">
+                <table class="premium-table matrix-table">
+                    <thead>
+                        <tr>
+                            <th style="position: sticky; left: 0; background: var(--bg-hover); z-index: 10;">Student</th>
+                            {% for course in grades_matrix.courses %}
+                            <th style="text-align: center;">{{ course.name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in grades_matrix.students %}
+                        <tr>
+                            <td style="position: sticky; left: 0; background: var(--card-bg); font-weight: 700;">{{ student.full_name }}</td>
+                            {% for course in grades_matrix.courses %}
+                            <td style="text-align: center;">
+                                {% set score = student.scores[course.id] %}
+                                <span class="score-pill {{ 'grade-high' if score >= 80 else 'grade-mid' if score >= 60 else 'grade-low' if score > 0 else 'grade-none' }}">
+                                    {{ score }}%
+                                </span>
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
     </main>
 </div>
 
@@ -458,6 +532,115 @@
 
     .empty-table-state { text-align: center; padding: 4rem !important; color: var(--text-muted); }
     .empty-table-state i { width: 48px; height: 48px; margin-bottom: 1rem; opacity: 0.3; }
+
+    .grade-badge-mini {
+        padding: 0.25rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 800;
+    }
+
+    .matrix-table th, .matrix-table td {
+        padding: 1rem !important;
+        border: 1px solid var(--border-color);
+    }
+    .score-pill {
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        min-width: 50px;
+        display: inline-block;
+    }
+    .grade-none {
+        background: rgba(0,0,0,0.05);
+        color: var(--text-muted);
+    }
+
+    /* Student Course Grid */
+    .courses-grid-student {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .course-pill-card {
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 1.25rem;
+        padding: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(10px);
+    }
+
+    .course-pill-card:hover {
+        transform: translateX(8px);
+        border-color: var(--primary-color);
+        background: var(--bg-hover);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .pill-icon {
+        width: 52px;
+        height: 52px;
+        background: var(--primary-light);
+        color: var(--primary-color);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+    }
+
+    .course-pill-card:hover .pill-icon {
+        background: var(--primary-color);
+        color: white;
+        transform: rotate(-10deg);
+    }
+
+    .pill-info { flex: 1; }
+    .course-name { font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: -0.01em; }
+    .teacher-name { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+
+    .pill-stats { display: flex; align-items: center; gap: 1rem; color: var(--text-muted); }
+    .mini-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-color); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: all 0.2s; }
+    .mini-btn:hover { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+    .chevron { width: 18px; opacity: 0.4; transition: transform 0.3s; }
+    .course-pill-card:hover .chevron { transform: translateX(4px); opacity: 1; color: var(--primary-color); }
+
+    /* Mobile Optimization */
+    @media (max-width: 992px) {
+        .content-header-premium {
+            flex-direction: column;
+            gap: 2rem;
+            align-items: flex-start;
+        }
+        .header-actions {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .header-actions::-webkit-scrollbar { display: none; }
+        .btn-premium { white-space: nowrap; }
+    }
+
+    @media (max-width: 768px) {
+        .premium-title { font-size: 1.75rem; }
+        .insight-data .value { font-size: 1.75rem; }
+        .insight-card { padding: 1.25rem; }
+        .insight-icon { width: 44px; height: 44px; }
+        .insight-icon i { width: 22px; height: 22px; }
+        .hide-mobile { display: none !important; }
+        .premium-table th, .premium-table td { padding: 1rem; }
+        .courses-grid-student { grid-template-columns: 1fr; }
+        .course-pill-card { padding: 1rem; }
+    }
 </style>
 
 <script>

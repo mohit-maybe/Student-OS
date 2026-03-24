@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+        <header class="page-header" style="margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 2rem;">
+            <div style="flex: 1; min-width: 300px;">
+                <span class="header-tag" style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">
+                    <i data-lucide="shield-check" style="width: 14px; vertical-align: middle; margin-right: 6px;"></i>
+                    Platform Infrastructure
+                </span>
+                <h1 style="font-size: clamp(2rem, 5vw, 3rem); margin: 1rem 0 0.5rem 0; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1;">Multi-Tenant <span style="color: #10b981;">Manager</span></h1>
+                <p style="color: var(--text-muted); margin: 0; font-size: 1.15rem; max-width: 600px;">Orchestrate and monitor independent school environments with global oversight.</p>
+            </div>
+            <button class="btn btn-primary" onclick="document.getElementById('addSchoolModal').style.display='flex'" style="height: 56px; padding: 0 2rem; border-radius: 16px; background: #10b981; border: none; font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                <i data-lucide="plus-circle" style="width: 20px;"></i>
+                Register Institution
+            </button>
+        </header>
+
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-bottom: 3.5rem;">
+            <div class="stat-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05)); border: 1px solid rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px);">
+                <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+                    <div>
+                        <p style="color: #10b981; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 0.5rem;">Active Tenants</p>
+                        <h2 style="font-size: 2.5rem; font-weight: 800; margin: 0;">{{ schools|length }}</h2>
+                    </div>
+                    <div style="width: 48px; height: 48px; border-radius: 14px; background: rgba(16, 185, 129, 0.2); display: flex; align-items: center; justify-content: center; color: #10b981;">
+                        <i data-lucide="school" style="width: 24px;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); backdrop-filter: blur(10px);">
+                <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+                    <div>
+                        <p style="color: var(--text-muted); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 0.5rem;">System Load</p>
+                        <h2 style="font-size: 2.5rem; font-weight: 800; margin: 0;">Optimal</h2>
+                    </div>
+                    <div style="width: 48px; height: 48px; border-radius: 14px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                        <i data-lucide="activity" style="width: 24px;"></i>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px;">
+                    <div style="width: 15%; height: 100%; background: #10b981; border-radius: 2px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="padding: 0; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 24px; overflow: hidden;">
+            <div style="padding: 1.5rem 2rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; font-weight: 700;">Institutional Directory</h3>
+                <div style="position: relative;">
+                    <i data-lucide="search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); width: 16px; color: var(--text-muted);"></i>
+                    <input type="text" placeholder="Filter schools..." style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 10px; padding: 0.6rem 1rem 0.6rem 2.8rem; color: var(--text-main); font-size: 0.9rem; width: 240px;">
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: left; background: rgba(255,255,255,0.02);">
+                            <th style="padding: 1.25rem 2rem; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Institution</th>
+                            <th style="padding: 1.25rem 2rem; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Domain Entry</th>
+                            <th style="padding: 1.25rem 2rem; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Identity</th>
+                            <th style="padding: 1.25rem 2rem; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Registry Date</th>
+                            <th style="padding: 1.25rem 2rem; text-align: right; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for school in schools %}
+                        <tr style="border-top: 1px solid var(--border-color); transition: all 0.2s; cursor: pointer;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+                            <td style="padding: 1.5rem 2rem;">
+                                <div style="display: flex; align-items: center; gap: 1.25rem;">
+                                    <div style="width: 44px; height: 44px; border-radius: 12px; background: {{ school.primary_color }}20; border: 2px solid {{ school.primary_color }}; display: flex; align-items: center; justify-content: center; color: {{ school.primary_color }}; box-shadow: 0 4px 12px {{ school.primary_color }}30;">
+                                        <i data-lucide="graduation-cap" width="22"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">{{ school.name }}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Public Entity</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="padding: 1.5rem 2rem;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <code style="background: rgba(16, 185, 129, 0.1); padding: 0.4rem 0.75rem; border-radius: 8px; color: #10b981; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;">{{ school.slug }}.studentos.com</code>
+                                    <a href="http://{{ school.slug }}.localhost:5000" target="_blank" style="color: var(--text-muted); transition: color 0.2s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='var(--text-muted)'">
+                                        <i data-lucide="external-link" width="16"></i>
+                                    </a>
+                                </div>
+                            </td>
+                            <td style="padding: 1.5rem 2rem;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <div style="width: 24px; height: 24px; border-radius: 6px; background: {{ school.primary_color }}; box-shadow: 0 0 10px {{ school.primary_color }}40;"></div>
+                                    <span style="font-family: monospace; font-size: 0.9rem; color: var(--text-muted);">{{ school.primary_color | upper }}</span>
+                                </div>
+                            </td>
+                            <td style="padding: 1.5rem 2rem; color: var(--text-muted); font-size: 0.95rem;">
+                                {{ school.created_at|pretty_date }}
+                            </td>
+                            <td style="padding: 1.5rem 2rem; text-align: right;">
+                                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 1rem;">
+                                    <button class="btn" onclick="openSchoolInsight({{ school.id }})" style="background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border-color); padding: 0.5rem 1rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s;">
+                                        <i data-lucide="bar-chart-3" width="14"></i>
+                                        View Insight
+                                    </button>
+                                    <span style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 0.5rem 1rem; border-radius: 12px; font-size: 0.85rem; font-weight: 700;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: pulse 2s infinite;"></span>
+                                        Operational
+                                    </span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- School Insight Modal -->
+<div id="insightModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); z-index: 1000; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div class="modal-content" style="width: 100%; max-width: 700px; padding: 3rem; background: var(--card-bg); border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative;">
+        <button onclick="document.getElementById('insightModal').style.display='none'" style="position: absolute; right: 2rem; top: 2rem; background: rgba(255,255,255,0.05); border: none; color: var(--text-muted); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="x"></i>
+        </button>
+
+        <div id="insightHeader" style="margin-bottom: 2.5rem;">
+            <h2 id="insightSchoolName" style="margin: 0 0 0.5rem 0; font-size: 2rem; font-weight: 800;">Institution Insight</h2>
+            <p id="insightSchoolSlug" style="color: #10b981; font-family: monospace; font-weight: 600; letter-spacing: 0.05em;"></p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 2.5rem;">
+            <div style="background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 20px; border: 1px solid var(--border-color);">
+                <p style="margin: 0 0 0.5rem 0; color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase;">User Base</p>
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <span id="insightStudents" style="font-size: 1.5rem; font-weight: 800; color: var(--text-main);">0</span>
+                        <span style="color: var(--text-muted); font-size: 0.9rem; margin-left: 0.25rem;">Students</span>
+                    </div>
+                    <div>
+                        <span id="insightTeachers" style="font-size: 1.5rem; font-weight: 800; color: var(--text-main);">0</span>
+                        <span style="color: var(--text-muted); font-size: 0.9rem; margin-left: 0.25rem;">Faculties</span>
+                    </div>
+                </div>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 20px; border: 1px solid var(--border-color);">
+                <p style="margin: 0 0 0.5rem 0; color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase;">Data Footprint</p>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <i data-lucide="database" style="color: #10b981; width: 20px;"></i>
+                    <span id="insightDbUsage" style="font-size: 1.5rem; font-weight: 800; color: var(--text-main);">0 KB</span>
+                </div>
+            </div>
+            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05)); padding: 1.5rem; border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.3); grid-column: span 2;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <p style="margin: 0 0 0.5rem 0; color: #10b981; font-size: 0.85rem; font-weight: 700; text-transform: uppercase;">Infrastructure Revenue</p>
+                        <h3 id="insightProfit" style="margin: 0; font-size: 2rem; font-weight: 900; color: var(--text-main);">$0</h3>
+                    </div>
+                    <div style="text-align: right;">
+                        <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">Instance Status</p>
+                        <span style="color: #10b981; font-weight: 700;">Healthy & Scaling</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1.25rem;">
+            <button onclick="document.getElementById('insightModal').style.display='none'" style="flex: 1; height: 56px; border-radius: 16px; background: rgba(255,255,255,0.05); color: var(--text-main); font-weight: 600; border: none; cursor: pointer;">Close</button>
+            <a id="exportBtn" href="#" class="btn btn-primary" style="flex: 2; height: 56px; border-radius: 16px; background: #10b981; color: white; font-weight: 700; border: none; display: flex; align-items: center; justify-content: center; gap: 0.75rem; text-decoration: none; box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);">
+                <i data-lucide="download"></i>
+                Download Full Registry (Excel)
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+async function openSchoolInsight(schoolId) {
+    const modal = document.getElementById('insightModal');
+    modal.style.display = 'flex';
+    
+    try {
+        const response = await fetch(`/superadmin/schools/details/${schoolId}`);
+        const data = await response.json();
+        
+        document.getElementById('insightSchoolName').textContent = data.name;
+        document.getElementById('insightSchoolSlug').textContent = data.slug + '.studentos.com';
+        document.getElementById('insightStudents').textContent = data.students;
+        document.getElementById('insightTeachers').textContent = data.teachers;
+        document.getElementById('insightDbUsage').textContent = data.db_usage;
+        document.getElementById('insightProfit').textContent = data.profit;
+        
+        document.getElementById('exportBtn').href = `/superadmin/schools/export/${schoolId}`;
+        
+    } catch (error) {
+        console.error('Error fetching school details:', error);
+    }
+}
+</script>
+
+<!-- Add Institution Modal -->
+<div id="addSchoolModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); z-index: 1000; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div class="modal-content" style="width: 100%; max-width: 550px; padding: 3rem; background: var(--card-bg); border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative; animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+        <button onclick="document.getElementById('addSchoolModal').style.display='none'" style="position: absolute; right: 2rem; top: 2rem; background: rgba(255,255,255,0.05); border: none; color: var(--text-muted); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+            <i data-lucide="x"></i>
+        </button>
+        
+        <h2 style="margin: 0 0 0.5rem 0; font-size: 2rem; font-weight: 800;">Register Institution</h2>
+        <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-size: 1.1rem;">Deploy a new sovereign instance to the infrastructure.</p>
+        
+        <form action="{{ url_for('schools.add_school') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Institution Name</label>
+                <input type="text" name="name" placeholder="e.g. Stanford Academy of Science" required style="width: 100%; height: 56px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main); font-size: 1rem; transition: all 0.3s;" onfocus="this.style.borderColor='#10b981'; this.style.boxShadow='0 0 0 4px rgba(16, 185, 129, 0.15)'" onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none'">
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Infrastructure URL</label>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <input type="text" name="slug" placeholder="stanford" required style="flex: 1; height: 56px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main); font-size: 1rem; transition: all 0.3s;" onfocus="this.style.borderColor='#10b981'; this.style.boxShadow='0 0 0 4px rgba(16, 185, 129, 0.15)'" onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none'">
+                    <span style="color: var(--text-muted); font-weight: 700; font-size: 1.1rem; opacity: 0.5;">.studentos.com</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 3rem;">
+                <label style="display: block; margin-bottom: 1rem; font-weight: 700; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Primary Brand Identity</label>
+                <div style="display: flex; align-items: center; gap: 1.5rem; background: rgba(255,255,255,0.03); padding: 1.25rem; border-radius: 18px; border: 1px solid var(--border-color);">
+                    <input type="color" name="primary_color" id="colorPicker" value="#10b981" style="width: 64px; height: 64px; border: none; padding: 0; border-radius: 14px; cursor: pointer; background: none;">
+                    <div>
+                        <div style="font-weight: 600; color: var(--text-main); margin-bottom: 0.25rem;">Theme Primary</div>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">This color defines the UI accents for all students and faculty.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1.25rem;">
+                <button type="button" class="btn" onclick="document.getElementById('addSchoolModal').style.display='none'" style="flex: 1; height: 56px; border-radius: 16px; background: rgba(255,255,255,0.05); color: var(--text-main); font-weight: 600; border: none;">Discard</button>
+                <button type="submit" class="btn btn-primary" style="flex: 2; height: 56px; border-radius: 16px; background: #10b981; color: white; font-weight: 700; border: none; box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);">Initialize Instance</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+@keyframes modalSlideUp {
+    from { opacity: 0; transform: scale(0.9) translateY(40px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+</style>
+{% endblock %}

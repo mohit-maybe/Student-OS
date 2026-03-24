@@ -1,40 +1,49 @@
 import os
 import psycopg2
+import sqlite3
+import re
 from psycopg2.extras import DictCursor
 from flask import g, current_app
+from contextlib import contextmanager
 
 def get_db():
+    if not current_app:
+        # Fallback for initialization outside of request context
+        db_url = os.getenv('DATABASE_URL')
+        if db_url and ('postgres' in db_url):
+            try:
+                if db_url.startswith('postgres://'):
+                    db_url = db_url.replace('postgres://', 'postgresql://', 1)
+                return psycopg2.connect(db_url, cursor_factory=DictCursor)
+            except: pass
+        db_path = os.getenv('DATABASE', 'student_os.db')
+        db = sqlite3.connect(db_path)
+        db.row_factory = sqlite3.Row
+        return db
+
     db = getattr(g, '_database', None)
     if db is None:
         db_url = os.getenv('DATABASE_URL')
         if db_url and ('postgres' in db_url):
             try:
-                # Normalizing for psycopg2 (Heroku/Render use postgres://)
                 if db_url.startswith('postgres://'):
                     db_url = db_url.replace('postgres://', 'postgresql://', 1)
-                
-                import psycopg2
-                from psycopg2.extras import DictCursor
                 db = g._database = psycopg2.connect(db_url, cursor_factory=DictCursor)
-                print("Successfully connected to PostgreSQL")
-            except (ImportError, Exception) as e:
-                print(f"Postgres connection failed: {e}")
+                print("[OK] Successfully connected to PostgreSQL")
+            except Exception as e:
+                print(f"[ERROR] Postgres connection failed: {e}")
                 db_url = None
         
         if not db_url:
-            import sqlite3
             db_path = current_app.config.get('DATABASE', 'student_os.db')
             db = g._database = sqlite3.connect(db_path)
             db.row_factory = sqlite3.Row
             
     return db
 
-from contextlib import contextmanager
-
 @contextmanager
 def db_cursor(db):
     cursor = db.cursor()
-    # Check if we're using SQLite (it won't have the extras or specific connection attributes of psycopg2)
     is_sqlite = hasattr(db, 'row_factory') 
     
     class CursorWrapper:
@@ -44,15 +53,10 @@ def db_cursor(db):
         
         def execute(self, query, params=None):
             if self.is_sqlite:
-                import re
-                # 1. Translate %s to ?
                 if params is not None:
                     query = query.replace('%s', '?')
-                
-                # 2. Case-insensitive translation of ILIKE to LIKE
                 query = re.sub(r'\s+ILIKE\s+', ' LIKE ', query, flags=re.IGNORECASE)
                 
-                # 3. Robustly handle RETURNING id (remove for SQLite, use lastrowid)
                 returning_id = False
                 if re.search(r'\s+RETURNING\s+id', query, flags=re.IGNORECASE):
                     query = re.sub(r'\s+RETURNING\s+id', '', query, flags=re.IGNORECASE)
@@ -72,15 +76,12 @@ def db_cursor(db):
             return self.cursor.execute(query)
             
         def fetchone(self):
-            # If we stripped 'RETURNING id' for SQLite, we need to mock the result
             if self.is_sqlite and hasattr(self, 'last_row_id'):
                 row_id = self.last_row_id
                 delattr(self, 'last_row_id')
-                # Return a dict-like object for compatibility with ['id'] or [0]
                 class MockRow(dict):
                     def __getitem__(self, key):
-                        if key == 0 or key == 'id':
-                            return row_id
+                        if key == 0 or key == 'id': return row_id
                         return super().__getitem__(key)
                 return MockRow({'id': row_id})
             return self.cursor.fetchone()
@@ -102,41 +103,97 @@ def close_connection(exception):
         db.close()
 
 def init_db(app):
-    with app.app_context():
-        db = get_db()
-        is_sqlite = hasattr(db, 'row_factory')
-        with app.open_resource('schema.sql', mode='r') as f:
-            sql_script = f.read()
-            if is_sqlite:
-                # SQLite compatibility fixes
-                sql_script = sql_script.replace('SERIAL PRIMARY KEY', 'INTEGER PRIMARY KEY AUTOINCREMENT')
-                # Split and execute individually since SQLite's executescript can be picky with certain syntax
-                from db import db_cursor
-                with db_cursor(db) as cursor:
-                    for statement in sql_script.split(';'):
-                        if statement.strip():
-                            try:
-                                cursor.execute(statement)
-                            except Exception as e:
-                                print(f"Schema statement skipped: {e}")
-            else:
-                with db.cursor() as cursor:
-                    cursor.execute(sql_script)
-        db.commit()
-        
-        # Migration: add classroom_id to student_details if it doesn't exist
+    """Initializes the database and runs migrations if necessary."""
+    # Create a dedicated connection for initialization to avoid 'g' outside request context
+    db_url = os.getenv('DATABASE_URL')
+    db = None
+    if db_url and ('postgres' in db_url):
         try:
-            with db_cursor(db) as cursor:
-                if is_sqlite:
-                    cursor.execute("PRAGMA table_info(student_details)")
-                    cols = [row[1] for row in cursor.fetchall()]
-                    if 'classroom_id' not in cols:
-                        cursor.execute("ALTER TABLE student_details ADD COLUMN classroom_id INTEGER REFERENCES classrooms(id)")
-                else:
-                    cursor.execute("""
-                        ALTER TABLE student_details 
-                        ADD COLUMN IF NOT EXISTS classroom_id INTEGER REFERENCES classrooms(id)
-                    """)
-            db.commit()
+            if db_url.startswith('postgres://'):
+                db_url = db_url.replace('postgres://', 'postgresql://', 1)
+            db = psycopg2.connect(db_url, cursor_factory=DictCursor, connect_timeout=10)
         except Exception as e:
-            print(f"Migration warning (classroom_id): {e}")
+            print(f"[ERROR] Initialization connection failed: {e}")
+    
+    if not db:
+        db_path = app.config.get('DATABASE', 'student_os.db')
+        db = sqlite3.connect(db_path)
+        db.row_factory = sqlite3.Row
+
+    is_sqlite = hasattr(db, 'row_factory')
+    
+    try:
+        # Fast-path check
+        with db_cursor(db) as cursor:
+            if is_sqlite:
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='schools'")
+            else:
+                cursor.execute("SELECT 1 FROM information_schema.tables WHERE table_name='schools'")
+            
+            if cursor.fetchone():
+                print("[INFO] Database schema already exists, skipping full creation.")
+            else:
+                print("[START] Creating database schema...")
+                with app.open_resource('schema.sql', mode='r') as f:
+                    sql_script = f.read()
+                    if is_sqlite:
+                        sql_script = sql_script.replace('SERIAL PRIMARY KEY', 'INTEGER PRIMARY KEY AUTOINCREMENT')
+                        for statement in sql_script.split(';'):
+                            if statement.strip():
+                                try:
+                                    cursor.execute(statement)
+                                except Exception as e:
+                                    print(f"[WARN] Schema statement skipped: {e}")
+                    else:
+                        cursor.execute(sql_script)
+                db.commit()
+
+        # Migration system
+        print("[MIGRATE] Checking for required migrations...")
+        with db_cursor(db) as cursor:
+            if is_sqlite:
+                cursor.execute("PRAGMA table_info(student_details)")
+                cols = [row[1] for row in cursor.fetchall()]
+                if 'classroom_id' not in cols:
+                    cursor.execute("ALTER TABLE student_details ADD COLUMN classroom_id INTEGER REFERENCES classrooms(id)")
+                
+                tables = ['users', 'courses', 'classrooms', 'enrollments', 'grades', 'attendance', 
+                         'assignments', 'submissions', 'notifications', 'messages', 'remarks', 
+                         'student_details', 'teacher_details', 'exam_assets', 'predicted_topics', 
+                         'predicted_questions', 'revision_plans', 'schools']
+                
+                for table in tables:
+                    cursor.execute(f"PRAGMA table_info({table})")
+                    current_cols = [row[1] for row in cursor.fetchall()]
+                    if 'school_id' not in current_cols and table != 'schools':
+                        cursor.execute(f"ALTER TABLE {table} ADD COLUMN school_id INTEGER DEFAULT 1 REFERENCES schools(id)")
+                    if 'created_at' not in current_cols:
+                        try:
+                            cursor.execute(f"ALTER TABLE {table} ADD COLUMN created_at TIMESTAMP")
+                            cursor.execute(f"UPDATE {table} SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL")
+                        except: pass
+            else:
+                tables = ['users', 'courses', 'classrooms', 'enrollments', 'grades', 'attendance', 
+                         'assignments', 'submissions', 'notifications', 'messages', 'remarks', 
+                         'student_details', 'teacher_details', 'exam_assets', 'predicted_topics', 
+                         'predicted_questions', 'revision_plans']
+                
+                migration_sql = "DO $$ BEGIN "
+                migration_sql += "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='student_details' AND column_name='classroom_id') THEN ALTER TABLE student_details ADD COLUMN classroom_id INTEGER REFERENCES classrooms(id); END IF; "
+                for table in tables:
+                    migration_sql += f"IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='{table}' AND column_name='school_id') THEN ALTER TABLE {table} ADD COLUMN school_id INTEGER DEFAULT 1 REFERENCES schools(id); END IF; "
+                    migration_sql += f"IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='{table}' AND column_name='created_at') THEN ALTER TABLE {table} ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP; END IF; "
+                migration_sql += "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schools' AND column_name='created_at') THEN ALTER TABLE schools ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP; END IF; "
+                migration_sql += "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='teacher_details' AND column_name='status') THEN ALTER TABLE teacher_details ADD COLUMN status TEXT DEFAULT 'Active'; END IF; "
+                migration_sql += " END $$;"
+                cursor.execute(migration_sql)
+        
+        db.commit()
+        print("[OK] Database migrations complete.")
+    except Exception as e:
+        print(f"[WARN] Initialization/Migration failed: {e}")
+    finally:
+        if db:
+            db.close()
+
+

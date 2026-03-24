@@ -19,7 +19,11 @@ def login():
         
         if user and user.check_password(password):
             # Validate that the selected role matches the user's actual role
-            if user.role.lower() != selected_role.lower():
+            # Allow principal to login as teacher
+            is_valid_role = (user.role.lower() == selected_role.lower()) or \
+                           (user.role.lower() == 'principal' and selected_role.lower() == 'teacher')
+            
+            if not is_valid_role:
                 flash(f'Invalid login. This account is registered as a {user.role.title()}, not a {selected_role.title()}.', 'error')
                 return render_template('login.html')
             

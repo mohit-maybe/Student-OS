@@ -7,6 +7,7 @@ from flask_login import login_required, current_user
 from flask_mail import Message
 from werkzeug.security import generate_password_hash
 from db import get_db, db_cursor
+from helpers import generate_credentials
 
 admissions_bp = Blueprint('admissions', __name__)
 
@@ -18,8 +19,8 @@ def student_qr(student_id):
     db = get_db()
     with db_cursor(db) as cursor:
         cursor.execute(
-            'SELECT full_name, admission_number FROM student_details WHERE user_id = %s',
-            (student_id,)
+            'SELECT full_name, admission_number FROM student_details WHERE user_id = %s AND school_id = %s',
+            (student_id, current_user.school_id)
         )
         student = cursor.fetchone()
 
@@ -46,17 +47,7 @@ def student_qr(student_id):
     img_buffer.seek(0)
     return send_file(img_buffer, mimetype='image/png')
 
-def generate_credentials(full_name):
-    # Base username from name
-    base = "".join(full_name.split()).lower()[:8]
-    random_suffix = "".join(secrets.choice(string.digits) for _ in range(4))
-    username = f"{base}{random_suffix}"
-    
-    # Strong random password
-    alphabet = string.ascii_letters + string.digits
-    password = "".join(secrets.choice(alphabet) for _ in range(10))
-    
-    return username, password
+# credentials helper moved to helpers.py
 
 @admissions_bp.route('/admissions/enroll', methods=['GET', 'POST'])
 @login_required
@@ -87,8 +78,8 @@ def enroll():
             with db_cursor(db) as cursor:
                 # 1. Create User
                 cursor.execute(
-                    'INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s) RETURNING id',
-                    (username, hashed_password, 'student')
+                    'INSERT INTO users (username, password_hash, role, school_id) VALUES (%s, %s, %s, %s) RETURNING id',
+                    (username, hashed_password, 'student', current_user.school_id)
                 )
                 user_id = cursor.fetchone()[0]
                 
@@ -96,9 +87,9 @@ def enroll():
                 admission_number = f"ADM{user_id:04d}"
                 cursor.execute(
                     '''INSERT INTO student_details 
-                    (user_id, full_name, email, mobile, dob, gender, address, parent_name, parent_mobile, parent_email, admission_number, classroom_id) 
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                    (user_id, full_name, email, mobile, dob, gender, address, parent_name, parent_mobile, parent_email, admission_number, classroom_id)
+                    (user_id, full_name, email, mobile, dob, gender, address, parent_name, parent_mobile, parent_email, admission_number, classroom_id, school_id) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                    (user_id, full_name, email, mobile, dob, gender, address, parent_name, parent_mobile, parent_email, admission_number, classroom_id, current_user.school_id)
                 )
             
             db.commit()
@@ -150,13 +141,13 @@ def enroll():
             FROM users u
             LEFT JOIN student_details sd ON u.id = sd.user_id
             LEFT JOIN classrooms cl ON sd.classroom_id = cl.id
-            WHERE u.role = 'student'
+            WHERE u.role = 'student' AND u.school_id = %s
             ORDER BY cl.name ASC, sd.full_name ASC
-        ''')
+        ''', (current_user.school_id,))
         rows = cursor.fetchall()
         
-        # Fetch classrooms for dropdown
-        cursor.execute("SELECT id, name, section FROM classrooms ORDER BY name")
+        # Fetch classrooms for dropdown (filtered by school)
+        cursor.execute("SELECT id, name, section FROM classrooms WHERE school_id = %s ORDER BY name", (current_user.school_id,))
         classrooms = [dict(row) for row in cursor.fetchall()]
     
     students = [dict(row) for row in rows]
@@ -179,12 +170,12 @@ def edit_student(user_id):
                 full_name = %%s, email = %%s, mobile = %%s, dob = %%s, 
                 gender = %%s, address = %%s, parent_name = %%s, 
                 parent_mobile = %%s, parent_email = %%s, classroom_id = %%s
-                WHERE user_id = %%s
+                WHERE user_id = %%s AND school_id = %%s
             '''.replace('%%', '%'), (
                 data.get('full_name'), data.get('email'), data.get('mobile'), 
                 data.get('dob'), data.get('gender'), data.get('address'),
                 data.get('parent_name'), data.get('parent_mobile'), 
-                data.get('parent_email'), data.get('classroom_id') or None, user_id
+                data.get('parent_email'), data.get('classroom_id') or None, user_id, current_user.school_id
             ))
         db.commit()
         flash('Student details updated!', 'success')
@@ -205,13 +196,89 @@ def delete_student(user_id):
     try:
         from db import db_cursor
         with db_cursor(db) as cursor:
-            cursor.execute('DELETE FROM student_details WHERE user_id = %s', (user_id,))
-            cursor.execute('DELETE FROM users WHERE id = %s', (user_id,))
-            cursor.execute('DELETE FROM enrollments WHERE student_id = %s', (user_id,))
+            cursor.execute('DELETE FROM student_details WHERE user_id = %s AND school_id = %s', (user_id, current_user.school_id))
+            cursor.execute('DELETE FROM users WHERE id = %s AND school_id = %s', (user_id, current_user.school_id))
+            cursor.execute('DELETE FROM enrollments WHERE student_id = %s AND school_id = %s', (user_id, current_user.school_id))
         db.commit()
         flash('Student account deleted successfully.', 'success')
     except Exception as e:
         db.rollback()
         flash(f'Error deleting student: {str(e)}', 'error')
+        
+    return redirect(url_for('admissions.enroll'))
+@admissions_bp.route('/admissions/import', methods=['POST'])
+@login_required
+def import_students():
+    if current_user.role not in ['teacher', 'admin']:
+        flash('Unauthorized access.', 'error')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    file = request.files.get('file')
+    if not file or not file.filename.endswith('.csv'):
+        flash('Please upload a valid CSV file.', 'error')
+        return redirect(url_for('admissions.enroll'))
+
+    # Use io.StringIO to read the uploaded file as text
+    stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+    csv_input = csv.DictReader(stream)
+    
+    db = get_db()
+    count = 0
+    errors = []
+    
+    try:
+        from extensions import mail
+        with db_cursor(db) as cursor:
+            for row in csv_input:
+                full_name = row.get('full_name', '').strip()
+                email = row.get('email', '').strip()
+                
+                if not full_name or not email:
+                    continue
+                
+                username, password = generate_credentials(full_name)
+                hashed_password = generate_password_hash(password)
+                
+                try:
+                    # 1. Create User
+                    cursor.execute(
+                        'INSERT INTO users (username, password_hash, role, school_id) VALUES (%s, %s, %s, %s) RETURNING id',
+                        (username, hashed_password, 'student', current_user.school_id)
+                    )
+                    user_id = cursor.fetchone()[0]
+                    
+                    # 2. Create Student Details
+                    admission_number = f"ADM{user_id:04d}"
+                    cursor.execute(
+                        '''INSERT INTO student_details 
+                        (user_id, full_name, email, admission_number, school_id) 
+                        VALUES (%s, %s, %s, %s, %s)''',
+                        (user_id, full_name, email, admission_number, current_user.school_id)
+                    )
+                    
+                    # 3. Send Credentials Email
+                    msg = Message(
+                        'Student OS - Your Login Credentials',
+                        recipients=[email]
+                    )
+                    msg.body = f"Welcome {full_name}!\n\nYour account is ready.\nUsername: {username}\nPassword: {password}\n\nLogin: {request.host_url}"
+                    # Try sending but don't fail the whole import if one fails
+                    try:
+                        mail.send(msg)
+                    except: pass
+                    
+                    count += 1
+                except Exception as e:
+                    errors.append(f"Row {count+2}: {str(e)}")
+                    
+        db.commit()
+        if errors:
+            flash(f'Imported {count} students with {len(errors)} errors: {", ".join(errors[:3])}...', 'warning')
+        else:
+            flash(f'Successfully imported {count} students!', 'success')
+            
+    except Exception as e:
+        db.rollback()
+        flash(f'Import failed: {str(e)}', 'error')
         
     return redirect(url_for('admissions.enroll'))

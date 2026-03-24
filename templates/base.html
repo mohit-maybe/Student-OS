@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
+    
 
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
@@ -89,8 +90,12 @@
     <!-- Mobile Header -->
     <div class="mobile-header">
         <div class="brand">
+            {% if current_school.logo_path %}
+            <img src="{{ url_for('academic.uploaded_file', filename=current_school.logo_path) }}" alt="Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 6px;">
+            {% else %}
             <i data-lucide="graduation-cap"></i>
-            <span>Student OS</span>
+            {% endif %}
+            <span>{{ current_school.name if current_school else 'Student OS' }}</span>
         </div>
         <button id="mobile-toggle" aria-label="Toggle Menu">
             <i data-lucide="menu"></i>

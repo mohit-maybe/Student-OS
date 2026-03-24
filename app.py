@@ -19,6 +19,8 @@ from routes.admissions import admissions_bp
 from routes.exam_predictor import exam_predictor_bp
 from routes.classrooms import classrooms_bp
 from routes.staff import staff_bp
+from routes.schools import schools_bp
+from routes.webhooks import webhooks_bp
 from flask_mail import Message
 from flask_babel import _
 from flask import session, request
@@ -76,20 +78,53 @@ app.register_blueprint(admissions_bp)
 app.register_blueprint(exam_predictor_bp)
 app.register_blueprint(classrooms_bp)
 app.register_blueprint(staff_bp)
+app.register_blueprint(schools_bp)
+app.register_blueprint(webhooks_bp)
 
 @app.context_processor
-def inject_unread_count():
+def inject_school_context():
+    from db import get_db, db_cursor
+    db = get_db()
+    
+    # Identify school from subdomain first
+    host = request.host.split(':')[0]
+    parts = host.split('.')
+    
+    school = None
+    # Check for subdomain (e.g., slug.localhost or slug.studentos.com)
+    if len(parts) > 1:
+        potential_slug = parts[0]
+        # Ignore common prefixes or TLD-only checks if needed
+        if potential_slug not in ['www', 'app', 'localhost', '127']:
+            with db_cursor(db) as cursor:
+                cursor.execute('SELECT * FROM schools WHERE slug = %s', (potential_slug,))
+                school = cursor.fetchone()
+    
+    # If no subdomain match, use the user's school if logged in
+    if not school and current_user.is_authenticated:
+        with db_cursor(db) as cursor:
+            cursor.execute('SELECT * FROM schools WHERE id = %s', (current_user.school_id,))
+            school = cursor.fetchone()
+            
+    # Ultimate fallback to school ID 1
+    if not school:
+        with db_cursor(db) as cursor:
+            cursor.execute('SELECT * FROM schools WHERE id = 1')
+            school = cursor.fetchone()
+        
+    unread_count = 0
     try:
         if current_user.is_authenticated:
-            from db import db_cursor
-            db = get_db()
             with db_cursor(db) as cursor:
-                cursor.execute('SELECT COUNT(*) FROM messages WHERE recipient_id = %s AND is_read = 0', (current_user.id,))
-                count = cursor.fetchone()[0]
-            return dict(unread_messages_count=count)
+                cursor.execute('SELECT COUNT(*) FROM messages WHERE recipient_id = %s AND is_read = 0 AND school_id = %s', (current_user.id, current_user.school_id))
+                unread_count = cursor.fetchone()[0]
     except Exception as e:
-        print(f"Context processor error: {e}")
-    return dict(unread_messages_count=0)
+        print(f"Unread count error: {e}")
+        
+    return dict(
+        current_school=school,
+        unread_messages_count=unread_count
+    )
 
 from datetime import datetime
 @app.template_filter('pretty_date')
@@ -210,42 +245,51 @@ def seed_demo_data(db):
     db.commit()
     print("Demo data seeded successfully.")
 
-# Thread-safe initialization flag
+# Thread-safe initialization
 _db_initialized = False
 
 @app.before_request
 def safe_init():
     global _db_initialized
     if not _db_initialized:
-        # Avoid running in debug reloader's main process
+        # Avoid running in debug reloader's main process or if already initialized
         if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not app.debug:
-            print("🚀 Performing one-time lazy startup initialization...")
+            print("[INIT] Performing one-time startup initialization...")
             startup_init()
         _db_initialized = True
 
 def startup_init():
     """Initializes the database and default data safely."""
     with app.app_context():
+        # Create tables
         try:
-            # Create tables
             init_db(app)
             
             db = get_db()
             from db import db_cursor
             with db_cursor(db) as cursor:
+                # 0. Ensure at least one school exists (Genesis School)
+                cursor.execute('SELECT id FROM schools WHERE id = 1')
+                if not cursor.fetchone():
+                    cursor.execute(
+                        "INSERT INTO schools (id, name, slug) VALUES (%s, %s, %s)",
+                        (1, 'Genesis High', 'genesis')
+                    )
+                    db.commit()
+
                 # 1. Create default admin if not exists
                 cursor.execute('SELECT id FROM users WHERE username = %s', ('admin',))
                 if not cursor.fetchone():
-                    cursor.execute('INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)',
-                               ('admin', generate_password_hash('admin123'), 'admin'))
+                    cursor.execute('INSERT INTO users (username, password_hash, role, school_id) VALUES (%s, %s, %s, %s)',
+                               ('admin', generate_password_hash('admin123'), 'admin', 1))
                     db.commit()
 
                 # 2. Create Group Chat system user (ID 0)
                 try:
                     cursor.execute('SELECT id FROM users WHERE id = %s', (0,))
                     if not cursor.fetchone():
-                        cursor.execute("INSERT INTO users (id, username, password_hash, role) VALUES (%s, %s, %s, %s)", 
-                                   (0, 'Group Chat', 'system', 'group'))
+                        cursor.execute("INSERT INTO users (id, username, password_hash, role, school_id) VALUES (%s, %s, %s, %s, %s)", 
+                                   (0, 'Group Chat', 'system', 'group', 1))
                         db.commit()
                 except Exception as e:
                     print(f"Group chat setup warning: {e}")
@@ -255,19 +299,20 @@ def startup_init():
                 if should_seed:
                     cursor.execute("SELECT 1 FROM users WHERE role = 'student' LIMIT 1")
                     if not cursor.fetchone():
-                        print("📊 Seeding initial demo data...")
+                        print("[DATA] Seeding initial demo data...")
                         seed_demo_data(db)
                 else:
-                    print("ℹ️ Auto-seeding is disabled via environment variable.")
+                    print("[INFO] Auto-seeding is disabled via environment variable.")
             
-            print("✅ Startup initialization complete.")
+            print("[OK] Startup initialization complete.")
         except Exception as startup_err:
-            print(f"❌ CRITICAL STARTUP ERROR: {startup_err}")
+            print(f"[ERROR] CRITICAL STARTUP ERROR: {startup_err}")
             import traceback
             traceback.print_exc()
     # We let it pass so gunicorn can at least start the app 
     # and we can potentially see the error through the 500 handler if it reaches it.
 
+# Perform one-time initialization before starting the app (Locally)
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
 

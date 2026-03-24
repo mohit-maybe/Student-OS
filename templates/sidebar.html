@@ -2,8 +2,12 @@
     <div
         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; padding-top: 0.5rem;">
         <div class="brand" style="margin-bottom: 0;">
+            {% if current_school.logo_path %}
+            <img src="{{ url_for('academic.uploaded_file', filename=current_school.logo_path) }}" alt="Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 6px; margin-right: 12px;">
+            {% else %}
             <i data-lucide="graduation-cap"></i>
-            Student OS
+            {% endif %}
+            {{ current_school.name if current_school else 'Student OS' }}
         </div>
         <button id="mobile-close"
             style="display: none; background: var(--primary-light); border: none; color: var(--primary-color); cursor: pointer; padding: 0.5rem; border-radius: 0.5rem;">
@@ -18,19 +22,19 @@
                 <span>{{ _('Dashboard') }}</span>
             </a>
         </li>
-        {% if user.role in ['admin', 'teacher'] %}
+        <li>
+            <a href="{{ url_for('classrooms.index') }}"
+                class="{{ 'active' if 'classrooms' in request.endpoint else '' }}">
+                <i data-lucide="layout"></i>
+                <span>{{ _('My Classroom') if user.role == 'student' else _('Classrooms') }}</span>
+            </a>
+        </li>
+        {% if user.role in ['admin', 'teacher', 'principal'] %}
         <li>
             <a href="{{ url_for('admissions.enroll') }}"
                 class="{{ 'active' if 'admissions.enroll' in request.endpoint else '' }}">
                 <i data-lucide="user-plus"></i>
                 <span>{{ _('Admission') }}</span>
-            </a>
-        </li>
-        <li>
-            <a href="{{ url_for('classrooms.index') }}"
-                class="{{ 'active' if 'classrooms' in request.endpoint else '' }}">
-                <i data-lucide="layout"></i>
-                <span>{{ _('Classrooms') }}</span>
             </a>
         </li>
         {% if user.role == 'admin' %}
@@ -41,8 +45,25 @@
                 <span>Staff Management</span>
             </a>
         </li>
+        <li>
+            <a href="{{ url_for('schools.school_settings') }}"
+                class="{{ 'active' if 'schools.school_settings' in request.endpoint else '' }}">
+                <i data-lucide="building-2"></i>
+                <span>School Configuration</span>
+            </a>
+        </li>
+        {% if user.id == 1 %}
+        <li>
+            <a href="{{ url_for('schools.list_schools') }}"
+                class="{{ 'active' if 'schools' in request.endpoint else '' }}">
+                <i data-lucide="globeg"></i>
+                <span style="color: #10b981;">Platform Manager</span>
+            </a>
+        </li>
         {% endif %}
         {% endif %}
+        {% endif %}
+        {% if user.role != 'student' %}
         <li>
             <a href="{{ url_for('courses.courses') }}"
                 class="{{ 'active' if 'courses.courses' in request.endpoint else '' }}">
@@ -50,6 +71,7 @@
                 <span>{{ _('Courses') }}</span>
             </a>
         </li>
+        {% endif %}
         <li>
             <a href="{{ url_for('academic.grades') }}"
                 class="{{ 'active' if 'academic.grades' in request.endpoint else '' }}">

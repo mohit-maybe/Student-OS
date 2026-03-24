@@ -19,7 +19,7 @@
 
         <div class="grid-container" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem;">
             {% for classroom in classrooms %}
-            <div class="classroom-card-premium" onclick="window.location.href='{{ url_for('classrooms.detail', classroom_id=classroom.id) }}';">
+            <a href="{{ url_for('classrooms.detail', classroom_id=classroom.id) }}" class="classroom-card-premium" style="text-decoration: none; display: block;">
                 <div class="card-glow"></div>
                 <div class="card-content">
                     <div class="card-top">
@@ -50,7 +50,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
             {% else %}
             <div class="empty-state-premium" style="grid-column: 1 / -1;">
                 <div class="empty-icon">
@@ -293,6 +293,34 @@
     .empty-state-premium p {
         color: var(--text-muted);
         max-width: 400px;
+    }
+
+    /* Mobile Optimization */
+    @media (max-width: 768px) {
+        .dashboard-layout {
+            padding: 1rem;
+        }
+        .main-content {
+            padding: 1rem;
+        }
+        .grid-container {
+            grid-template-columns: 1fr !important;
+            gap: 1.5rem !important;
+        }
+        .class-title {
+            font-size: 1.5rem;
+        }
+        .icon-orb {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+        }
+        .classroom-card-premium {
+            padding: 1.25rem;
+        }
+        .content-header h1 {
+            font-size: 1.75rem;
+        }
     }
 </style>
 <script>

@@ -10,6 +10,9 @@
                 <span class="header-pretitle">Overview & Analytics</span>
                 <h1 class="header-title">Welcome back, {{ user.username }}</h1>
                 <p style="color: var(--text-muted); margin-top: 0.75rem; font-weight: 500; font-size: 1.1rem; max-width: 600px;">
+                    {% if user.role == 'student' %}
+                    You are in <a href="{{ url_for('classrooms.index') }}" style="color: var(--primary-color); text-decoration: none; font-weight: 700; border-bottom: 2px solid rgba(99, 102, 241, 0.2); transition: border-color 0.2s;" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='rgba(99, 102, 241, 0.2)'"><b>{{ stats.classroom_name }}</b></a>.
+                    {% endif %}
                     You are currently managing <b>{{ stats.card2_value }}</b> {{ stats.card2_label | lower }} with a
                     system status of <span style="color: var(--success-color); font-weight: 800;">OPTIMAL</span>.
                 </p>

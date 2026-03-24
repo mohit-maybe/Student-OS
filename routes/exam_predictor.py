@@ -16,22 +16,22 @@ def dashboard():
     from db import db_cursor
     with db_cursor(db) as cursor:
         # Fetch uploaded docs
-        cursor.execute('SELECT * FROM exam_assets WHERE student_id = %s ORDER BY created_at DESC', (current_user.id,))
+        cursor.execute('SELECT * FROM exam_assets WHERE student_id = %s AND school_id = %s ORDER BY created_at DESC', (current_user.id, current_user.school_id))
         assets = cursor.fetchall()
         
         # Fetch predicted topics
-        cursor.execute('SELECT * FROM predicted_topics WHERE student_id = %s ORDER BY probability DESC', (current_user.id,))
+        cursor.execute('SELECT * FROM predicted_topics WHERE student_id = %s AND school_id = %s ORDER BY probability DESC', (current_user.id, current_user.school_id))
         topics = cursor.fetchall()
         
         # Fetch questions
         questions = []
         if topics:
             topic_ids = [t['id'] for t in topics]
-            cursor.execute('SELECT q.*, t.topic_name FROM predicted_questions q JOIN predicted_topics t ON q.topic_id = t.id WHERE t.student_id = %s', (current_user.id,))
+            cursor.execute('SELECT q.*, t.topic_name FROM predicted_questions q JOIN predicted_topics t ON q.topic_id = t.id WHERE t.student_id = %s AND q.school_id = %s', (current_user.id, current_user.school_id))
             questions = cursor.fetchall()
             
         # Fetch revision plan
-        cursor.execute('SELECT r.*, t.topic_name FROM revision_plans r JOIN predicted_topics t ON r.topic_id = t.id WHERE r.student_id = %s ORDER BY scheduled_date', (current_user.id,))
+        cursor.execute('SELECT r.*, t.topic_name FROM revision_plans r JOIN predicted_topics t ON r.topic_id = t.id WHERE r.student_id = %s AND r.school_id = %s ORDER BY scheduled_date', (current_user.id, current_user.school_id))
         revision_plan = cursor.fetchall()
 
     return render_template('exam_predictor/dashboard.html', 
@@ -69,15 +69,15 @@ def upload_file():
         from db import db_cursor
         with db_cursor(db) as cursor:
             cursor.execute('''
-                INSERT INTO exam_assets (student_id, file_path, asset_type, exam_year, class_level)
-                VALUES (%s, %s, %s, %s, %s)
-            ''', (current_user.id, file_save_path, asset_type, exam_year, class_level))
+                INSERT INTO exam_assets (student_id, file_path, asset_type, exam_year, class_level, school_id)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            ''', (current_user.id, file_save_path, asset_type, exam_year, class_level, current_user.school_id))
         db.commit()
         
         flash('File uploaded successfully! Analyzing documents...', 'success')
         # In a real app, this should be a background task (e.g. Celery)
         # For this demo, we'll trigger analysis immediately
-        success = run_analysis(current_user.id)
+        success = run_analysis(current_user.id, current_user.school_id)
         if success:
             flash('Analysis completed successfully!', 'success')
         else:
@@ -85,14 +85,14 @@ def upload_file():
         
         return redirect(url_for('exam_predictor.dashboard'))
 
-def run_analysis(student_id):
+def run_analysis(student_id, school_id):
     """Internal function to process docs and update predictions."""
     print(f"DEBUG: Starting analysis for student ID {student_id}")
     db = get_db()
     from db import db_cursor
     try:
         with db_cursor(db) as cursor:
-            cursor.execute('SELECT * FROM exam_assets WHERE student_id = %s', (student_id,))
+            cursor.execute('SELECT * FROM exam_assets WHERE student_id = %s AND school_id = %s', (student_id, school_id))
             assets = cursor.fetchall()
             
             if not assets:
@@ -126,36 +126,36 @@ def run_analysis(student_id):
             print(f"DEBUG: Detected {len(topics)} topics. Updating database...")
 
             # Clear old predictions for this student
-            cursor.execute('DELETE FROM predicted_topics WHERE student_id = %s', (student_id,))
+            cursor.execute('DELETE FROM predicted_topics WHERE student_id = %s AND school_id = %s', (student_id, school_id))
             
             # Insert new predictions
             for t in topics:
                 cursor.execute('''
-                    INSERT INTO predicted_topics (student_id, topic_name, probability, importance_level)
-                    VALUES (%s, %s, %s, %s) RETURNING id
-                ''', (student_id, t['topic'], t['probability'], t['importance']))
+                    INSERT INTO predicted_topics (student_id, topic_name, probability, importance_level, school_id)
+                    VALUES (%s, %s, %s, %s, %s) RETURNING id
+                ''', (student_id, t['topic'], t['probability'], t['importance'], school_id))
                 topic_id = cursor.fetchone()[0]
                 
                 # Generate and insert questions for this topic
                 questions = ai_engine.generate_questions([t])
                 for q in questions:
                     cursor.execute('''
-                        INSERT INTO predicted_questions (topic_id, question_text)
-                        VALUES (%s, %s)
-                    ''', (topic_id, q['question']))
+                        INSERT INTO predicted_questions (topic_id, question_text, school_id)
+                        VALUES (%s, %s, %s)
+                    ''', (topic_id, q['question'], school_id))
             
             # Generate Revision Plan (default 7 days)
             plan = ai_engine.generate_revision_plan(topics, 7)
-            cursor.execute('DELETE FROM revision_plans WHERE student_id = %s', (student_id,))
+            cursor.execute('DELETE FROM revision_plans WHERE student_id = %s AND school_id = %s', (student_id, school_id))
             for p in plan:
                 # Find the topic_id for this topic name
-                cursor.execute('SELECT id FROM predicted_topics WHERE student_id = %s AND topic_name = %s', (student_id, p['topic']))
+                cursor.execute('SELECT id FROM predicted_topics WHERE student_id = %s AND topic_name = %s AND school_id = %s', (student_id, p['topic'], school_id))
                 row = cursor.fetchone()
                 if row:
                     cursor.execute('''
-                        INSERT INTO revision_plans (student_id, topic_id, scheduled_date)
-                        VALUES (%s, %s, %s)
-                    ''', (student_id, row[0], p['date']))
+                        INSERT INTO revision_plans (student_id, topic_id, scheduled_date, school_id)
+                        VALUES (%s, %s, %s, %s)
+                    ''', (student_id, row[0], p['date'], school_id))
             
             db.commit()
             print("DEBUG: Analysis completed successfully.")

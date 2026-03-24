@@ -28,9 +28,9 @@ def dashboard():
         # Fetch Notifications
         cursor.execute('''
             SELECT * FROM notifications 
-            WHERE user_id = %s 
+            WHERE user_id = %s AND school_id = %s
             ORDER BY created_at DESC LIMIT 5
-        ''', (current_user.id,))
+        ''', (current_user.id, current_user.school_id))
         notifications = cursor.fetchall()
 
         
@@ -44,6 +44,16 @@ def dashboard():
                 GROUP BY c.id, c.name
             ''', (current_user.id,))
             grades = cursor.fetchall()
+
+            # Classroom Info
+            cursor.execute('''
+                SELECT cl.name 
+                FROM classrooms cl
+                JOIN student_details sd ON sd.classroom_id = cl.id
+                WHERE sd.user_id = %s AND sd.school_id = %s
+            ''', (current_user.id, current_user.school_id))
+            classroom_row = cursor.fetchone()
+            stats['classroom_name'] = classroom_row['name'] if classroom_row else "Not Assigned"
             
             for g in grades:
                 chart_data['grade_labels'].append(g['name'])
@@ -52,8 +62,8 @@ def dashboard():
             # Attendance
             cursor.execute('''
                 SELECT status, COUNT(*) as count 
-                FROM attendance WHERE student_id = %s GROUP BY status
-            ''', (current_user.id,))
+                FROM attendance WHERE student_id = %s AND school_id = %s GROUP BY status
+            ''', (current_user.id, current_user.school_id))
             attendance = cursor.fetchall()
             
             att_dict = {row['status']: row['count'] for row in attendance}
@@ -135,10 +145,56 @@ def dashboard():
             ''', (current_user.id,))
             recent_activity = cursor.fetchall()
 
+        elif current_user.role == 'principal':
+            # 1. School-wide grade average
+            cursor.execute('''
+                SELECT AVG(score) FROM grades WHERE school_id = %s
+            ''', (current_user.school_id,))
+            avg_score = cursor.fetchone()[0] or 0
+            
+            # 2. School-wide attendance distribution
+            cursor.execute('''
+                SELECT status, COUNT(*) as count 
+                FROM attendance WHERE school_id = %s GROUP BY status
+            ''', (current_user.school_id,))
+            attendance = cursor.fetchall()
+            att_dict = {row['status']: row['count'] for row in attendance}
+            chart_data['attendance_values'] = [att_dict.get('Present', 0), att_dict.get('Absent', 0), att_dict.get('Late', 0)]
+            
+            # 3. Faculty count
+            cursor.execute('''
+                SELECT COUNT(*) FROM users WHERE school_id = %s AND role = 'teacher'
+            ''', (current_user.school_id,))
+            teacher_count = cursor.fetchone()[0]
+            
+            # 4. Student count
+            cursor.execute('''
+                SELECT COUNT(*) FROM users WHERE school_id = %s AND role = 'student'
+            ''', (current_user.school_id,))
+            student_count = cursor.fetchone()[0]
+
+            stats = {
+                'card1_label': _('School Average'), 'card1_value': f"{round(avg_score, 1)}%",
+                'card2_label': _('Total Faculty'), 'card2_value': teacher_count,
+                'card3_label': _('Total Students'), 'card3_value': student_count,
+                'card4_label': _('Status'), 'card4_value': _('Active Monitoring')
+            }
+            
+            # Recent school activity
+            cursor.execute('''
+                SELECT 'New Admission' as type, full_name as detail, created_at as ts
+                FROM student_details WHERE school_id = %s
+                UNION ALL
+                SELECT 'Grade Posted' as type, 'Classwide' as detail, date_recorded as ts
+                FROM grades WHERE school_id = %s
+                ORDER BY ts DESC LIMIT 5
+            ''', (current_user.school_id, current_user.school_id))
+            recent_activity = cursor.fetchall()
+
         else:
-            cursor.execute('SELECT COUNT(*) FROM users')
+            cursor.execute('SELECT COUNT(*) FROM users WHERE school_id = %s', (current_user.school_id,))
             user_count = cursor.fetchone()[0]
-            cursor.execute('SELECT COUNT(*) FROM courses')
+            cursor.execute('SELECT COUNT(*) FROM courses WHERE school_id = %s', (current_user.school_id,))
             course_count = cursor.fetchone()[0]
             stats = {
                 'card1_label': _('System'), 'card1_value': _('Online'),

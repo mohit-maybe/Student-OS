@@ -109,6 +109,35 @@
     #reader__scan_region {
         background: transparent !important;
     }
+
+    /* Mobile Optimization */
+    @media (max-width: 900px) {
+        .grid-layout {
+            grid-template-columns: 1fr !important;
+            gap: 1.5rem !important;
+        }
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 1rem !important;
+        }
+        .status-badge {
+            align-self: flex-start;
+        }
+        #reader-container {
+            min-height: 300px !important;
+        }
+        #courseSelect {
+            font-size: 1.1rem; /* Larger for easier touch */
+            padding: 1rem !important;
+        }
+        .log-section {
+            order: 2;
+        }
+        .scanner-section {
+            order: 1;
+        }
+    }
 </style>
 
 <!-- Load html5-qrcode from CDN -->

@@ -1,117 +1,177 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="main-container">
-    <header class="page-header" style="margin-bottom: 2.5rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1.5rem;">
-        <div style="flex: 1; min-width: 280px;">
-            <span class="header-tag" style="background: rgba(79, 70, 229, 0.1); color: var(--primary-color);">Administrative Portal</span>
-            <h1 style="font-size: clamp(1.75rem, 5vw, 2.5rem); margin: 0.5rem 0 0.25rem 0; font-weight: 800; background: linear-gradient(135deg, var(--text-main), #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.2;">Staff Management</h1>
-            <p style="color: var(--text-muted); margin: 0; font-size: 1.1rem;">Recruit, manage, and notify your institution's faculty.</p>
-        </div>
-        <button class="btn btn-primary" onclick="document.getElementById('addTeacherModal').style.display='flex'" style="height: 50px; padding: 0 1.5rem; border-radius: 14px; box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4); white-space: nowrap;">
-            <i data-lucide="plus-circle" style="margin-right: 0.5rem;"></i>
-            Add New Teacher
-        </button>
-    </header>
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
 
-    <!-- Staff List Grid -->
-    <div class="card glass-card" style="padding: 0; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
-        <div class="table-container" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-            <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
-                <thead style="background: rgba(249, 250, 251, 0.5); border-bottom: 1px solid var(--border-color);">
-                    <tr>
-                        <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Teacher Details</th>
-                        <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Contact & Dept</th>
-                        <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Joined</th>
-                        <th style="padding: 1.25rem 1.5rem; text-align: right; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in teachers %}
-                    <tr class="staff-row" style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;">
-                        <td style="padding: 1.25rem 1.5rem;">
-                            <div style="display: flex; align-items: center; gap: 1rem;">
-                                <div class="avatar" style="width: 45px; height: 45px; border-radius: 12px; background: linear-gradient(135deg, #6366f1, #a855f7); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem;">
-                                    {{ t.full_name[0] }}
-                                </div>
-                                <div>
-                                    <div style="font-weight: 700; color: var(--text-main); font-size: 1.05rem;">{{ t.full_name }}</div>
-                                    <div style="font-size: 0.85rem; color: var(--text-muted);">@{{ t.username }}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td style="padding: 1.25rem 1.5rem;">
-                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-main);">
-                                    <i data-lucide="mail" style="width: 14px; color: var(--primary-color);"></i>
-                                    {{ t.email }}
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
-                                    <span class="badge" style="background: rgba(79, 70, 229, 0.05); color: var(--primary-color); border: 1px solid rgba(79, 70, 229, 0.1);">{{ t.department or 'General Faculty' }}</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td style="padding: 1.25rem 1.5rem; color: var(--text-muted); font-size: 0.9rem;">
-                            {{ t.joined_at | pretty_date }}
-                        </td>
-                        <td style="padding: 1.25rem 1.5rem; text-align: right;">
-                            <form action="{{ url_for('staff.delete_teacher', user_id=t.id) }}" method="POST" onsubmit="return confirm('Archive this staff member? This will remove portal access.')" style="display: inline;">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn-icon" style="color: #ef4444; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); width: 40px; height: 40px; border-radius: 10px;">
-                                    <i data-lucide="trash-2"></i>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="4" style="padding: 4rem; text-align: center; color: var(--text-muted);">
-                            <div style="opacity: 0.3; margin-bottom: 1.5rem;">
-                                <i data-lucide="users" style="width: 64px; height: 64px;"></i>
-                            </div>
-                            <h3 style="margin: 0;">No Teachers Found</h3>
-                            <p>Start by adding your first faculty member.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <main class="main-content">
+        <div class="main-container">
+            <header class="page-header" style="margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 2rem;">
+                <div style="flex: 1; min-width: 300px;">
+                    <span class="header-tag" style="background: rgba(99, 102, 241, 0.1); color: #6366f1; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">
+                        <i data-lucide="shield-check" style="width: 14px; vertical-align: middle; margin-right: 6px;"></i>
+                        Administrative Core
+                    </span>
+                    <h1 style="font-size: clamp(2rem, 5vw, 3rem); margin: 1rem 0 0.5rem 0; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1;">Staff <span style="color: #6366f1;">Management</span></h1>
+                    <p style="color: var(--text-muted); margin: 0; font-size: 1.15rem; max-width: 600px;">Orchestrate your institution's faculty and administrative roles.</p>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    {% if is_superadmin %}
+                    <div style="margin-right: 1rem;">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 800; color: #10b981; text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.05em;">Managed Institution</label>
+                        <select onchange="window.location.href='?school_id=' + this.value" style="height: 48px; min-width: 220px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 0 1rem; color: #10b981; font-weight: 700; cursor: pointer; outline: none; transition: all 0.3s;">
+                            {% for school in all_schools %}
+                            <option value="{{ school.id }}" {% if school.id == current_view_school_id %}selected{% endif %}>{{ school.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                    <button class="btn" onclick="document.getElementById('importStaffModal').style.display='flex'" style="height: 56px; padding: 0 1.5rem; border-radius: 16px; background: rgba(255,255,255,0.03); color: var(--text-main); border: 1px solid var(--border-color); font-weight: 600; display: flex; align-items: center; gap: 0.75rem; transition: all 0.3s; cursor: pointer;">
+                        <i data-lucide="file-up" style="width: 20px;"></i>
+                        Bulk Import
+                    </button>
+                    <button class="btn btn-primary" onclick="document.getElementById('addTeacherModal').style.display='flex'" style="height: 56px; padding: 0 2rem; border-radius: 16px; background: #6366f1; border: none; color: white; font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4); transition: all 0.3s; cursor: pointer;">
+                        <i data-lucide="user-plus" style="width: 20px;"></i>
+                        Add New Staff
+                    </button>
+                </div>
+            </header>
+
+            <!-- Search & Filter Bar -->
+            <div class="card glass-card" style="padding: 1.5rem; margin-bottom: 2.5rem; display: flex; gap: 1.5rem; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                <div style="position: relative; flex: 1; min-width: 300px;">
+                    <i data-lucide="search" style="position: absolute; left: 1.25rem; top: 50%; transform: translateY(-50%); width: 18px; color: var(--text-muted);"></i>
+                    <input type="text" id="staffSearch" placeholder="Search by name, department or username..." 
+                           style="width: 100%; height: 50px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem 0 3.5rem; color: var(--text-main); font-size: 0.95rem; outline: none; transition: all 0.3s;"
+                           onkeyup="filterStaff()">
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <select id="deptFilter" onchange="filterStaff()" style="height: 50px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main); font-weight: 600; outline: none; cursor: pointer;">
+                        <option value="">All Departments</option>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Science">Science</option>
+                        <option value="Arts">Arts</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Administration">Administration</option>
+                    </select>
+                    <select id="roleFilter" onchange="filterStaff()" style="height: 50px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main); font-weight: 600; outline: none; cursor: pointer;">
+                        <option value="">All Roles</option>
+                        <option value="teacher">Teacher</option>
+                        <option value="principal">Principal</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Staff List -->
+            <div class="card glass-card" style="padding: 0; overflow: hidden; border-radius: 24px;">
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; min-width: 1000px;" id="staffTable">
+                        <thead>
+                            <tr style="text-align: left; background: rgba(255,255,255,0.02); border-bottom: 2px solid var(--border-color);">
+                                <th style="padding: 1.5rem 2rem; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Member</th>
+                                <th style="padding: 1.5rem 2rem; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Connectivity</th>
+                                <th style="padding: 1.5rem 2rem; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Assignment</th>
+                                <th style="padding: 1.5rem 2rem; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Status</th>
+                                <th style="padding: 1.5rem 2rem; text-align: right; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in teachers %}
+                            <tr class="staff-row" data-dept="{{ t.department }}" data-role="{{ t.role }}" style="border-bottom: 1px solid var(--border-color); transition: all 0.2s; cursor: default;">
+                                <td style="padding: 1.5rem 2rem;">
+                                    <div style="display: flex; align-items: center; gap: 1.25rem;">
+                                        <div style="width: 50px; height: 50px; border-radius: 15px; background: linear-gradient(135deg, #6366f1, #a855f7); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
+                                            {{ t.full_name[0] | upper }}
+                                        </div>
+                                        <div>
+                                            <div class="staff-name" style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">{{ t.full_name }}</div>
+                                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
+                                                <code style="color: #6366f1; font-weight: 600; font-size: 0.85rem;">@{{ t.username }}</code>
+                                                {% if t.role == 'principal' %}
+                                                <span style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; font-size: 0.65rem; padding: 2px 8px; border-radius: 20px; font-weight: 800; border: 1px solid rgba(245, 158, 11, 0.2);">CHIEF</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="padding: 1.5rem 2rem;">
+                                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                        <div style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.95rem;">
+                                            <i data-lucide="mail" style="width: 14px; color: #6366f1;"></i>
+                                            {{ t.email }}
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-muted); font-size: 0.9rem;">
+                                            <i data-lucide="phone" style="width: 14px;"></i>
+                                            {{ t.mobile or 'Not Provided' }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="padding: 1.5rem 2rem;">
+                                    <span style="background: rgba(255,255,255,0.05); color: var(--text-main); padding: 0.5rem 1rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; border: 1px solid var(--border-color);">
+                                        {{ t.department or 'General' }}
+                                    </span>
+                                </td>
+                                <td style="padding: 1.5rem 2rem;">
+                                    {% set status_colors = {'Active': '#10b981', 'On Leave': '#f59e0b', 'Inactive': '#ef4444'} %}
+                                    {% set status_color = status_colors.get(t.status, '#6366f1') %}
+                                    <span style="display: inline-flex; align-items: center; gap: 0.5rem; background: {{ status_color }}10; color: {{ status_color }}; padding: 0.4rem 0.85rem; border-radius: 20px; font-size: 0.85rem; font-weight: 700; border: 1px solid {{ status_color }}20;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: {{ status_color }};"></span>
+                                        {{ t.status }}
+                                    </span>
+                                </td>
+                                <td style="padding: 1.5rem 2rem; text-align: right;">
+                                    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem;">
+                                        <button onclick='openEditStaff({{ t | tojson }})' class="btn-icon" style="background: rgba(255,255,255,0.03); color: var(--text-main); border: 1px solid var(--border-color); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+                                            <i data-lucide="edit-3" width="18"></i>
+                                        </button>
+                                        <form action="{{ url_for('staff.delete_teacher', user_id=t.id) }}" method="POST" onsubmit="return confirm('Immediate termination: Revoke all access for this member?')" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="school_id" value="{{ current_view_school_id }}">
+                                            <button type="submit" class="btn-icon" style="background: rgba(239, 68, 68, 0.05); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.1); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+                                                <i data-lucide="trash-2" width="18"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-    </div>
+    </main>
 </div>
 
-<!-- Add Teacher Modal -->
-<div id="addTeacherModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(10px); z-index: 1000; align-items: center; justify-content: center;">
-    <div class="card glass-card" style="width: 100%; max-width: 550px; padding: 2.5rem; border-radius: 24px; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h2 style="margin: 0; font-weight: 800;">Add Faculty Member</h2>
-            <button onclick="document.getElementById('addTeacherModal').style.display='none'" class="btn-icon">
-                <i data-lucide="x"></i>
-            </button>
-        </div>
-        
+<!-- Add Staff Modal -->
+<div id="addTeacherModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(15px); z-index: 2000; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div class="modal-content" style="width: 100%; max-width: 600px; padding: 3rem; background: var(--card-bg); border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 50px 100px -20px rgba(0,0,0,0.6); position: relative; animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+        <button onclick="document.getElementById('addTeacherModal').style.display='none'" style="position: absolute; right: 2rem; top: 2rem; background: rgba(255,255,255,0.05); border: none; color: var(--text-muted); width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="x"></i>
+        </button>
+
+        <h2 style="margin: 0 0 0.5rem 0; font-size: 2rem; font-weight: 800;">Member Recruitment</h2>
+        <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-size: 1.1rem;">Adding a new sovereign member to the faculty registry.</p>
+
         <form action="{{ url_for('staff.add_teacher') }}" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem;">
-                <div class="form-group" style="grid-column: span 2;">
-                    <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">Full Name</label>
-                    <input type="text" name="full_name" class="form-input" placeholder="e.g. Dr. Jane Smith" required style="width: 100%; padding: 0.85rem; border-radius: 12px;">
+            <input type="hidden" name="school_id" value="{{ current_view_school_id }}">
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;">
+                <div style="grid-column: span 2;">
+                    <label style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Full Identity</label>
+                    <input type="text" name="full_name" placeholder="e.g. Professor Alistair Sterling" required style="width: 100%; height: 56px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main); font-size: 1rem;">
                 </div>
-                
-                <div class="form-group" style="grid-column: span 2;">
-                    <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">Official Email</label>
-                    <input type="email" name="email" class="form-input" placeholder="jane.smith@university.edu" required style="width: 100%; padding: 0.85rem; border-radius: 12px;">
+                <div style="grid-column: span 2;">
+                    <label style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Connectivity (Email)</label>
+                    <input type="email" name="email" placeholder="official.name@institution.edu" required style="width: 100%; height: 56px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main); font-size: 1rem;">
                 </div>
-
-                <div class="form-group">
-                    <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">Mobile Number</label>
-                    <input type="tel" name="mobile" class="form-input" placeholder="+1..." style="width: 100%; padding: 0.85rem; border-radius: 12px;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Mobile</label>
+                    <input type="tel" name="mobile" style="width: 100%; height: 56px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main);">
                 </div>
-
-                <div class="form-group">
-                    <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">Department</label>
-                    <select name="department" class="form-input" style="width: 100%; padding: 0.85rem; border-radius: 12px;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Department</label>
+                    <select name="department" style="width: 100%; height: 56px; background: #1a1c23; border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main); font-weight: 600; cursor: pointer;">
                         <option value="Mathematics">Mathematics</option>
                         <option value="Science">Science</option>
                         <option value="Arts">Arts</option>
@@ -119,34 +179,179 @@
                         <option value="Administration">Administration</option>
                     </select>
                 </div>
+                <div style="grid-column: span 2;">
+                    <label style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Inherent Role</label>
+                    <div style="display: flex; gap: 1.5rem;">
+                        <label style="flex: 1; position: relative; cursor: pointer;">
+                            <input type="radio" name="role" value="teacher" checked style="display: none;">
+                            <div class="role-chip" style="padding: 1rem; border: 2px solid var(--border-color); border-radius: 16px; text-align: center; transition: 0.3s;">
+                                <i data-lucide="book-open" style="margin-bottom: 0.5rem; display: block; margin-inline: auto;"></i>
+                                <span style="font-weight: 700; font-size: 0.9rem;">Teacher</span>
+                            </div>
+                        </label>
+                        <label style="flex: 1; position: relative; cursor: pointer;">
+                            <input type="radio" name="role" value="principal" style="display: none;">
+                            <div class="role-chip" style="padding: 1rem; border: 2px solid var(--border-color); border-radius: 16px; text-align: center; transition: 0.3s;">
+                                <i data-lucide="award" style="margin-bottom: 0.5rem; display: block; margin-inline: auto;"></i>
+                                <span style="font-weight: 700; font-size: 0.9rem;">Principal</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
             </div>
-
-            <div style="margin-top: 2rem; background: rgba(79, 70, 229, 0.05); padding: 1.25rem; border-radius: 16px; border: 1px dashed rgba(79, 70, 229, 0.2);">
-                <p style="margin: 0; font-size: 0.85rem; color: var(--primary-color); display: flex; align-items: center; gap: 0.5rem;">
-                    <i data-lucide="info" style="width: 16px;"></i>
-                    Login credentials will be auto-generated and sent to the teacher's email immediately.
-                </p>
-            </div>
-
-            <div style="margin-top: 2.5rem; display: flex; gap: 1rem;">
-                <button type="button" onclick="document.getElementById('addTeacherModal').style.display='none'" class="btn" style="flex: 1; background: var(--bg-secondary);">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex: 2;">Confirm & Add Staff</button>
+            <div style="margin-top: 3rem; display: flex; gap: 1.25rem;">
+                <button type="button" onclick="document.getElementById('addTeacherModal').style.display='none'" style="flex: 1; height: 56px; border-radius: 16px; background: rgba(255,255,255,0.05); color: var(--text-main); font-weight: 600; border: none; cursor: pointer;">Cancel</button>
+                <button type="submit" style="flex: 2; height: 56px; border-radius: 16px; background: #6366f1; color: white; font-weight: 700; border: none; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3); cursor: pointer;">Finalize Deployment</button>
             </div>
         </form>
     </div>
 </div>
 
+<!-- Edit Staff Modal -->
+<div id="editStaffModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(15px); z-index: 2000; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div class="modal-content" style="width: 100%; max-width: 600px; padding: 3rem; background: var(--card-bg); border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); position: relative;">
+        <button onclick="document.getElementById('editStaffModal').style.display='none'" style="position: absolute; right: 2rem; top: 2rem; background: rgba(255,255,255,0.05); border: none; color: var(--text-muted); width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="x"></i>
+        </button>
+
+        <h2 style="margin: 0 0 0.5rem 0; font-size: 2rem; font-weight: 800;">Adjust Identity</h2>
+        <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-size: 1.1rem;">Modifying parameters for <span id="editStaffTitleName" style="color: #6366f1; font-weight: 700;"></span></p>
+
+        <form id="editStaffForm" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="school_id" value="{{ current_view_school_id }}">
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;">
+                <div style="grid-column: span 2;">
+                    <label style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Full Identity</label>
+                    <input type="text" name="full_name" id="edit_full_name" required style="width: 100%; height: 56px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main); font-size: 1rem;">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Connectivity (Email)</label>
+                    <input type="email" name="email" id="edit_email" required style="width: 100%; height: 56px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main); font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Department</label>
+                    <select name="department" id="edit_department" style="width: 100%; height: 56px; background: #1a1c23; border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main); font-weight: 600;">
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Science">Science</option>
+                        <option value="Arts">Arts</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Administration">Administration</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Status</label>
+                    <select name="status" id="edit_status" style="width: 100%; height: 56px; background: #1a1c23; border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main); font-weight: 600;">
+                        <option value="Active">Active</option>
+                        <option value="On Leave">On Leave</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Role</label>
+                    <select name="role" id="edit_role" style="width: 100%; height: 56px; background: #1a1c23; border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main); font-weight: 600;">
+                        <option value="teacher">Teacher</option>
+                        <option value="principal">Principal</option>
+                    </select>
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Mobile</label>
+                    <input type="tel" name="mobile" id="edit_mobile" style="width: 100%; height: 56px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 14px; padding: 0 1.25rem; color: var(--text-main);">
+                </div>
+            </div>
+            <div style="margin-top: 3rem; display: flex; gap: 1.25rem;">
+                <button type="button" onclick="document.getElementById('editStaffModal').style.display='none'" style="flex: 1; height: 56px; border-radius: 16px; background: rgba(255,255,255,0.05); color: var(--text-main); font-weight: 600; border: none; cursor: pointer;">Cancel</button>
+                <button type="submit" style="flex: 2; height: 56px; border-radius: 16px; background: #6366f1; color: white; font-weight: 700; border: none; cursor: pointer;">Commit Adjustments</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div id="importStaffModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(15px); z-index: 2000; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div class="modal-content" style="width: 100%; max-width: 500px; padding: 3rem; background: var(--card-bg); border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); position: relative;">
+        <button onclick="document.getElementById('importStaffModal').style.display='none'" style="position: absolute; right: 2rem; top: 2rem; background: rgba(255,255,255,0.05); border: none; color: var(--text-muted); width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="x"></i>
+        </button>
+        <h2 style="margin: 0 0 1rem 0; font-size: 2rem; font-weight: 800;">Bulk Ingestion</h2>
+        <p style="color: var(--text-muted); margin-bottom: 2rem; line-height: 1.6;">Upload a CSV file with columns: <code>full_name</code>, <code>email</code>, <code>department</code>.</p>
+        
+        <form action="{{ url_for('staff.import_teachers') }}" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="school_id" value="{{ current_view_school_id }}">
+            <div style="border: 2px dashed var(--border-color); border-radius: 20px; padding: 3rem; text-align: center; background: rgba(255,255,255,0.02); margin-bottom: 2rem; cursor: pointer;" onclick="document.getElementById('csv_file').click()">
+                <i data-lucide="upload" style="width: 48px; height: 48px; color: #6366f1; margin-bottom: 1rem;"></i>
+                <p style="margin: 0; font-weight: 600;">Select Registry File</p>
+                <input type="file" id="csv_file" name="file" accept=".csv" style="display: none;" onchange="this.nextElementSibling.textContent = this.files[0].name">
+                <p style="margin-top: 0.5rem; color: #10b981; font-weight: 700;"></p>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; height: 56px; border-radius: 16px; background: #6366f1; font-weight: 700; border: none; cursor: pointer;">Execute Ingestion</button>
+        </form>
+    </div>
+</div>
+
 <style>
-    .staff-row:hover {
-        background: rgba(249, 250, 251, 0.8) !important;
+    @keyframes modalSlideUp {
+        from { opacity: 0; transform: translateY(40px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
     }
-    @keyframes slideUp {
-        from { transform: translateY(30px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
+    
+    .role-chip {
+        border-color: var(--border-color);
+        background: rgba(255,255,255,0.02);
+    }
+    
+    input[type="radio"]:checked + .role-chip {
+        border-color: #6366f1;
+        background: rgba(99, 102, 241, 0.1);
+        color: #6366f1;
+    }
+
+    .staff-row:hover {
+        background: rgba(255,255,255,0.03);
+    }
+
+    .btn-icon:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
 </style>
 
 <script>
-    // Lucide icons are initialized globally in base.html
+function filterStaff() {
+    const search = document.getElementById('staffSearch').value.toLowerCase();
+    const dept = document.getElementById('deptFilter').value;
+    const role = document.getElementById('roleFilter').value;
+    const rows = document.querySelectorAll('.staff-row');
+
+    rows.forEach(row => {
+        const name = row.querySelector('.staff-name').textContent.toLowerCase();
+        const rowDept = row.getAttribute('data-dept');
+        const rowRole = row.getAttribute('data-role');
+        
+        const matchesSearch = name.includes(search);
+        const matchesDept = !dept || rowDept === dept;
+        const matchesRole = !role || rowRole === role;
+
+        if (matchesSearch && matchesDept && matchesRole) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function openEditStaff(staff) {
+    document.getElementById('edit_full_name').value = staff.full_name;
+    document.getElementById('edit_email').value = staff.email;
+    document.getElementById('edit_department').value = staff.department || '';
+    document.getElementById('edit_status').value = staff.status || 'Active';
+    document.getElementById('edit_role').value = staff.role;
+    document.getElementById('edit_mobile').value = staff.mobile || '';
+    document.getElementById('editStaffTitleName').textContent = staff.full_name;
+    
+    document.getElementById('editStaffForm').action = `/admin/staff/update/${staff.id}`;
+    document.getElementById('editStaffModal').style.display = 'flex';
+}
 </script>
 {% endblock %}

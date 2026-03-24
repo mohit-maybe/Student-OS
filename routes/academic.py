@@ -22,9 +22,9 @@ def grades():
                 flash('Score must be between 0 and 100.', 'error')
                 return redirect(url_for('academic.grades'))
                 
-            cursor.execute('INSERT INTO grades (student_id, course_id, score, grade_type) VALUES (%s, %s, %s, %s)',
+            cursor.execute('INSERT INTO grades (student_id, course_id, score, grade_type, school_id) VALUES (%s, %s, %s, %s, %s)',
                        (request.form.get('student_id'), request.form.get('course_id'), 
-                        request.form.get('score'), request.form.get('grade_type')))
+                        request.form.get('score'), request.form.get('grade_type'), current_user.school_id))
             db.commit()
             flash('Grade added!', 'success')
             
@@ -32,18 +32,26 @@ def grades():
                 return redirect(url_for('courses.course_details', course_id=request.form.get('course_id')))
             return redirect(url_for('academic.grades'))
 
-        if current_user.role == 'student':
+        elif current_user.role == 'student':
             cursor.execute('''
                 SELECT g.*, c.name as course_name FROM grades g 
-                JOIN courses c ON g.course_id = c.id WHERE g.student_id = %s
-            ''', (current_user.id,))
+                JOIN courses c ON g.course_id = c.id WHERE g.student_id = %s AND g.school_id = %s
+            ''', (current_user.id, current_user.school_id))
             grades = cursor.fetchall()
-        else:
+        elif current_user.role in ['admin', 'principal']:
             cursor.execute('''
                 SELECT g.*, u.username as student_name, c.name as course_name
                 FROM grades g JOIN users u ON g.student_id = u.id JOIN courses c ON g.course_id = c.id
-                WHERE c.teacher_id = %s
-            ''', (current_user.id,))
+                WHERE g.school_id = %s
+            ''', (current_user.school_id,))
+            grades = cursor.fetchall()
+        else:
+            # Teacher only sees their course grades
+            cursor.execute('''
+                SELECT g.*, u.username as student_name, c.name as course_name
+                FROM grades g JOIN users u ON g.student_id = u.id JOIN courses c ON g.course_id = c.id
+                WHERE c.teacher_id = %s AND g.school_id = %s
+            ''', (current_user.id, current_user.school_id))
             grades = cursor.fetchall()
             
         cursor.execute("SELECT * FROM users WHERE role = 'student'")
@@ -59,18 +67,27 @@ def attendance():
     from db import db_cursor
     with db_cursor(db) as cursor:
         if request.method == 'POST' and current_user.role == 'teacher':
-            cursor.execute('INSERT INTO attendance (student_id, course_id, date, status) VALUES (%s, %s, %s, %s)',
+            cursor.execute('INSERT INTO attendance (student_id, course_id, date, status, school_id) VALUES (%s, %s, %s, %s, %s)',
                        (request.form.get('student_id'), request.form.get('course_id'), 
-                        request.form.get('date'), request.form.get('status')))
+                        request.form.get('date'), request.form.get('status'), current_user.school_id))
             db.commit()
             flash('Log updated!', 'success')
             return redirect(url_for('academic.attendance'))
 
-        if current_user.role == 'student':
+        elif current_user.role == 'student':
             cursor.execute('''
                 SELECT a.*, c.name as course_name FROM attendance a 
-                JOIN courses c ON a.course_id = c.id WHERE a.student_id = %s ORDER BY a.date DESC
-            ''', (current_user.id,))
+                JOIN courses c ON a.course_id = c.id WHERE a.student_id = %s AND a.school_id = %s ORDER BY a.date DESC
+            ''', (current_user.id, current_user.school_id))
+            logs = cursor.fetchall()
+        elif current_user.role in ['admin', 'principal']:
+            cursor.execute('''
+                SELECT a.*, u.username as student_name, c.name as course_name
+                FROM attendance a 
+                JOIN users u ON a.student_id = u.id 
+                JOIN courses c ON a.course_id = c.id
+                WHERE a.school_id = %s ORDER BY a.date DESC
+            ''', (current_user.school_id,))
             logs = cursor.fetchall()
         else:
             cursor.execute('''
@@ -78,8 +95,8 @@ def attendance():
                 FROM attendance a 
                 JOIN users u ON a.student_id = u.id 
                 JOIN courses c ON a.course_id = c.id
-                WHERE c.teacher_id = %s ORDER BY a.date DESC
-            ''', (current_user.id,))
+                WHERE c.teacher_id = %s AND a.school_id = %s ORDER BY a.date DESC
+            ''', (current_user.id, current_user.school_id))
             logs = cursor.fetchall()
 
             
@@ -92,25 +109,25 @@ def attendance():
 @academic_bp.route('/assignment/<int:assignment_id>/grade', methods=['GET'])
 @login_required
 def view_submissions(assignment_id):
-    if current_user.role not in ['teacher', 'admin']: return redirect(url_for('dashboard.dashboard'))
+    if current_user.role not in ['teacher', 'admin', 'principal']: return redirect(url_for('dashboard.dashboard'))
     db = get_db()
     from db import db_cursor
     with db_cursor(db) as cursor:
-        cursor.execute('SELECT * FROM assignments WHERE id = %s', (assignment_id,))
+        cursor.execute('SELECT * FROM assignments WHERE id = %s AND school_id = %s', (assignment_id, current_user.school_id))
         assignment = cursor.fetchone()
-        cursor.execute('SELECT * FROM courses WHERE id = %s', (assignment['course_id'],))
+        cursor.execute('SELECT * FROM courses WHERE id = %s AND school_id = %s', (assignment['course_id'], current_user.school_id))
         course = cursor.fetchone()
         cursor.execute('''
             SELECT s.*, u.username as student_name FROM submissions s 
-            JOIN users u ON s.student_id = u.id WHERE s.assignment_id = %s
-        ''', (assignment_id,))
+            JOIN users u ON s.student_id = u.id WHERE s.assignment_id = %s AND s.school_id = %s
+        ''', (assignment_id, current_user.school_id))
         submissions = cursor.fetchall()
     return render_template('grading_view.html', assignment=assignment, course=course, submissions=submissions, user=current_user)
 
 @academic_bp.route('/assignment/<int:assignment_id>/submission/<int:submission_id>/grade', methods=['POST'])
 @login_required
 def grade_submission(assignment_id, submission_id):
-    if current_user.role not in ['teacher', 'admin']: return redirect(url_for('dashboard.dashboard'))
+    if current_user.role not in ['teacher', 'admin', 'principal']: return redirect(url_for('dashboard.dashboard'))
     
     db = get_db()
     from db import db_cursor
@@ -128,21 +145,21 @@ def grade_submission(assignment_id, submission_id):
         feedback = request.form.get('feedback')
 
         
-        cursor.execute('UPDATE submissions SET grade = %s, feedback = %s WHERE id = %s', (grade, feedback, submission_id))
+        cursor.execute('UPDATE submissions SET grade = %s, feedback = %s WHERE id = %s AND school_id = %s', (grade, feedback, submission_id, current_user.school_id))
         
         # Sync to main grades table
-        cursor.execute('SELECT id FROM grades WHERE student_id = %s AND course_id = %s AND grade_type = %s',
-                               (sub['student_id'], assign['course_id'], f"Assignment: {assign['title']}"))
+        cursor.execute('SELECT id FROM grades WHERE student_id = %s AND course_id = %s AND grade_type = %s AND school_id = %s',
+                               (sub['student_id'], assign['course_id'], f"Assignment: {assign['title']}", current_user.school_id))
         existing = cursor.fetchone()
         
         if existing:
-            cursor.execute('UPDATE grades SET score = %s WHERE id = %s', (grade, existing['id']))
+            cursor.execute('UPDATE grades SET score = %s WHERE id = %s AND school_id = %s', (grade, existing['id'], current_user.school_id))
         else:
-            cursor.execute('INSERT INTO grades (student_id, course_id, score, grade_type) VALUES (%s, %s, %s, %s)',
-                       (sub['student_id'], assign['course_id'], grade, f"Assignment: {assign['title']}"))
+            cursor.execute('INSERT INTO grades (student_id, course_id, score, grade_type, school_id) VALUES (%s, %s, %s, %s, %s)',
+                       (sub['student_id'], assign['course_id'], grade, f"Assignment: {assign['title']}", current_user.school_id))
         
         # Add Notification
-        add_notification(db, sub['student_id'], f"Your work for '{assign['title']}' has been graded: {grade}%", 'success')
+        add_notification(db, sub['student_id'], f"Your work for '{assign['title']}' has been graded: {grade}%", 'success', current_user.school_id)
         
         db.commit()
     flash('Grade assigned and student notified!', 'success')
@@ -152,7 +169,7 @@ def grade_submission(assignment_id, submission_id):
 @academic_bp.route('/report/student/<int:student_id>')
 @login_required
 def download_student_report(student_id):
-    if current_user.role not in ['teacher', 'admin']: return redirect(url_for('dashboard.dashboard'))
+    if current_user.role not in ['teacher', 'admin', 'principal']: return redirect(url_for('dashboard.dashboard'))
     
     db = get_db()
     from db import db_cursor
@@ -164,18 +181,18 @@ def download_student_report(student_id):
         cursor.execute('''
             SELECT c.name, AVG(g.score) as avg_score 
             FROM grades g JOIN courses c ON g.course_id = c.id 
-            WHERE g.student_id = %s GROUP BY c.id, c.name
-        ''', (student_id,))
+            WHERE g.student_id = %s AND g.school_id = %s GROUP BY c.id, c.name
+        ''', (student_id, current_user.school_id))
         grades_data = cursor.fetchall()
         
         # Get Attendance
         cursor.execute('''
-            SELECT status, COUNT(*) as count FROM attendance WHERE student_id = %s GROUP BY status
-        ''', (student_id,))
+            SELECT status, COUNT(*) as count FROM attendance WHERE student_id = %s AND school_id = %s GROUP BY status
+        ''', (student_id, current_user.school_id))
         attendance_summary = cursor.fetchall()
         
         # Get Remarks
-        cursor.execute('SELECT * FROM remarks WHERE student_id = %s ORDER BY created_at DESC', (student_id,))
+        cursor.execute('SELECT * FROM remarks WHERE student_id = %s AND school_id = %s ORDER BY created_at DESC', (student_id, current_user.school_id))
         remarks_row = cursor.fetchone()
         remarks_data = dict(remarks_row) if remarks_row else {}
 
@@ -192,12 +209,12 @@ def download_student_report(student_id):
 @academic_bp.route('/report/batch')
 @login_required
 def download_batch_reports():
-    if current_user.role not in ['teacher', 'admin']: return redirect(url_for('dashboard.dashboard'))
+    if current_user.role not in ['teacher', 'admin', 'principal']: return redirect(url_for('dashboard.dashboard'))
     
     db = get_db()
     from db import db_cursor
     with db_cursor(db) as cursor:
-        cursor.execute("SELECT * FROM users WHERE role = 'student'")
+        cursor.execute("SELECT * FROM users WHERE role = 'student' AND school_id = %s", (current_user.school_id,))
         students = cursor.fetchall()
         
         zip_buffer = io.BytesIO()
@@ -207,16 +224,16 @@ def download_batch_reports():
                 cursor.execute('''
                     SELECT c.name, AVG(g.score) as avg_score 
                     FROM grades g JOIN courses c ON g.course_id = c.id 
-                    WHERE g.student_id = %s GROUP BY c.id, c.name
-                ''', (student['id'],))
+                    WHERE g.student_id = %s AND g.school_id = %s GROUP BY c.id, c.name
+                ''', (student['id'], current_user.school_id))
                 grades_data = cursor.fetchall()
                 
                 cursor.execute('''
-                    SELECT status, COUNT(*) as count FROM attendance WHERE student_id = %s GROUP BY status
-                ''', (student['id'],))
+                    SELECT status, COUNT(*) as count FROM attendance WHERE student_id = %s AND school_id = %s GROUP BY status
+                ''', (student['id'], current_user.school_id))
                 attendance_summary = cursor.fetchall()
                 
-                cursor.execute('SELECT * FROM remarks WHERE student_id = %s ORDER BY created_at DESC', (student['id'],))
+                cursor.execute('SELECT * FROM remarks WHERE student_id = %s AND school_id = %s ORDER BY created_at DESC', (student['id'], current_user.school_id))
                 remarks_row = cursor.fetchone()
                 remarks_data = dict(remarks_row) if remarks_row else {}
 
@@ -234,7 +251,7 @@ def download_batch_reports():
 @academic_bp.route('/remarks/save', methods=['POST'])
 @login_required
 def save_remarks():
-    if current_user.role not in ['teacher', 'admin']: return redirect(url_for('dashboard.dashboard'))
+    if current_user.role not in ['teacher', 'admin', 'principal']: return redirect(url_for('dashboard.dashboard'))
     
     student_id = request.form.get('student_id')
     term = request.form.get('term', 'Term 1')
@@ -244,15 +261,15 @@ def save_remarks():
     db = get_db()
     from db import db_cursor
     with db_cursor(db) as cursor:
-        cursor.execute('SELECT id FROM remarks WHERE student_id = %s AND term = %s', (student_id, term))
+        cursor.execute('SELECT id FROM remarks WHERE student_id = %s AND term = %s AND school_id = %s', (student_id, term, current_user.school_id))
         existing = cursor.fetchone()
         
         if existing:
-            cursor.execute('UPDATE remarks SET remarks = %s, improvement_areas = %s WHERE id = %s',
-                       (remarks, improvement, existing['id']))
+            cursor.execute('UPDATE remarks SET remarks = %s, improvement_areas = %s WHERE id = %s AND school_id = %s',
+                       (remarks, improvement, existing['id'], current_user.school_id))
         else:
-            cursor.execute('INSERT INTO remarks (student_id, teacher_id, term, remarks, improvement_areas) VALUES (%s, %s, %s, %s, %s)',
-                       (student_id, current_user.id, term, remarks, improvement))
+            cursor.execute('INSERT INTO remarks (student_id, teacher_id, term, remarks, improvement_areas, school_id) VALUES (%s, %s, %s, %s, %s, %s)',
+                       (student_id, current_user.id, term, remarks, improvement, current_user.school_id))
         
         db.commit()
     flash('Performance evaluation updated!', 'success')

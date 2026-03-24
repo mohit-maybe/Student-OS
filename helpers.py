@@ -23,11 +23,24 @@ def calculate_gpa(score):
     if score >= 60: return 1.0
     return 0.0
 
-def add_notification(db, user_id, message, n_type='info'):
+def add_notification(db, user_id, message, n_type='info', school_id=1):
     from db import db_cursor
     with db_cursor(db) as cursor:
-        cursor.execute('INSERT INTO notifications (user_id, message, type) VALUES (%s, %s, %s)',
-                   (user_id, message, n_type))
+        cursor.execute('INSERT INTO notifications (user_id, message, type, school_id) VALUES (%s, %s, %s, %s)',
+                   (user_id, message, n_type, school_id))
     db.commit()
-
-
+    
+def generate_credentials(full_name, role='student'):
+    import secrets
+    import string
+    # Base username from name
+    base = "".join(full_name.split()).lower()[:8]
+    random_suffix = "".join(secrets.choice(string.digits) for _ in range(4))
+    prefix = "s" if role == 'student' else "t"
+    username = f"{prefix}_{base}_{random_suffix}"
+    
+    # Strong random password
+    alphabet = string.ascii_letters + string.digits
+    password = "".join(secrets.choice(alphabet) for _ in range(10))
+    
+    return username, password

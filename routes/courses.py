@@ -14,7 +14,7 @@ def courses():
     from db import db_cursor
     with db_cursor(db) as cursor:
         if current_user.role == 'teacher':
-            cursor.execute('SELECT * FROM courses WHERE teacher_id = %s', (current_user.id,))
+            cursor.execute('SELECT * FROM courses WHERE teacher_id = %s AND school_id = %s', (current_user.id, current_user.school_id))
             courses = cursor.fetchall()
         elif current_user.role == 'student':
             cursor.execute('''
@@ -22,15 +22,16 @@ def courses():
                 FROM courses c 
                 JOIN enrollments e ON c.id = e.course_id 
                 JOIN users u ON c.teacher_id = u.id
-                WHERE e.student_id = %s
-            ''', (current_user.id,))
+                WHERE e.student_id = %s AND c.school_id = %s
+            ''', (current_user.id, current_user.school_id))
             courses = cursor.fetchall()
-        else: # Admin sees all
+        else: # Admin sees all (filtered by school)
             cursor.execute('''
                 SELECT c.*, u.username as teacher_name 
                 FROM courses c 
                 LEFT JOIN users u ON c.teacher_id = u.id
-            ''')
+                WHERE c.school_id = %s
+            ''', (current_user.school_id,))
             courses = cursor.fetchall()
     
     return render_template('courses.html', courses=courses, user=current_user)
@@ -52,19 +53,25 @@ def search_courses():
         elif current_user.role == 'student':
             cursor.execute('''
                 SELECT c.*, u.username as teacher_name 
+                WHERE teacher_id = %s AND name ILIKE %s AND school_id = %s
+            ''', (current_user.id, f'%{query}%', current_user.school_id))
+            courses = cursor.fetchall()
+        elif current_user.role == 'student':
+            cursor.execute('''
+                SELECT c.*, u.username as teacher_name 
                 FROM courses c 
                 JOIN enrollments e ON c.id = e.course_id 
                 JOIN users u ON c.teacher_id = u.id
-                WHERE e.student_id = %s AND c.name ILIKE %s
-            ''', (current_user.id, f'%{query}%'))
+                WHERE e.student_id = %s AND c.name ILIKE %s AND c.school_id = %s
+            ''', (current_user.id, f'%{query}%', current_user.school_id))
             courses = cursor.fetchall()
-        else:
+        else: # Admin sees all (filtered by school)
             cursor.execute('''
                 SELECT c.*, u.username as teacher_name 
                 FROM courses c 
                 LEFT JOIN users u ON c.teacher_id = u.id
-                WHERE c.name ILIKE %s
-            ''', (f'%{query}%',))
+                WHERE c.school_id = %s AND c.name ILIKE %s
+            ''', (current_user.school_id, f'%{query}%'))
             courses = cursor.fetchall()
         
     return {'courses': [dict(c) for c in courses]}
@@ -86,15 +93,15 @@ def course_details(course_id):
             flash('Unauthorized access.', 'error')
             return redirect(url_for('courses.courses'))
         
-        cursor.execute('SELECT * FROM assignments WHERE course_id = %s ORDER BY due_date', (course_id,))
+        cursor.execute('SELECT * FROM assignments WHERE course_id = %s AND school_id = %s ORDER BY due_date', (course_id, current_user.school_id))
         assignments = cursor.fetchall()
         cursor.execute('''
             SELECT u.*, sd.full_name 
             FROM users u 
             JOIN enrollments e ON u.id = e.student_id 
             LEFT JOIN student_details sd ON u.id = sd.user_id
-            WHERE e.course_id = %s
-        ''', (course_id,))
+            WHERE e.course_id = %s AND e.school_id = %s
+        ''', (course_id, current_user.school_id))
         students = cursor.fetchall()
         
         # Fetch students NOT enrolled in this course for the selection list
@@ -102,10 +109,10 @@ def course_details(course_id):
             SELECT u.id, u.username, sd.full_name 
             FROM users u
             LEFT JOIN student_details sd ON u.id = sd.user_id
-            WHERE u.role = 'student' 
+            WHERE u.role = 'student' AND u.school_id = %s
             AND u.id NOT IN (SELECT student_id FROM enrollments WHERE course_id = %s)
             ORDER BY u.username
-        ''', (course_id,))
+        ''', (current_user.school_id, course_id))
         available_students = cursor.fetchall()
     
     return render_template('course_details.html', 
@@ -128,8 +135,8 @@ def new_course():
         db = get_db()
         from db import db_cursor
         with db_cursor(db) as cursor:
-            cursor.execute('INSERT INTO courses (name, teacher_id, schedule) VALUES (%s, %s, %s)',
-                       (name, current_user.id, schedule))
+            cursor.execute('INSERT INTO courses (name, teacher_id, schedule, school_id) VALUES (%s, %s, %s, %s)',
+                       (name, current_user.id, schedule, current_user.school_id))
         db.commit()
         flash('Course created!', 'success')
         return redirect(url_for('courses.courses'))
@@ -167,7 +174,7 @@ def delete_course(course_id):
             flash('Access denied.', 'error')
             return redirect(url_for('courses.courses'))
             
-        cursor.execute('DELETE FROM courses WHERE id = %s', (course_id,))
+        cursor.execute('DELETE FROM courses WHERE id = %s AND school_id = %s', (course_id, current_user.school_id))
         db.commit()
     flash('Course deleted.', 'success')
     return redirect(url_for('courses.courses'))
@@ -182,15 +189,15 @@ def enroll_student(course_id):
     db = get_db()
     from db import db_cursor
     with db_cursor(db) as cursor:
-        cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
+        cursor.execute('SELECT * FROM users WHERE username = %s AND school_id = %s', (username, current_user.school_id))
         student = cursor.fetchone()
         
         if not student or student['role'] != 'student':
             flash('Student not found.', 'error')
             return redirect(url_for('courses.course_details', course_id=course_id))
             
-        cursor.execute('INSERT INTO enrollments (student_id, course_id) VALUES (%s, %s) ON CONFLICT DO NOTHING',
-                   (student['id'], course_id))
+        cursor.execute('INSERT INTO enrollments (student_id, course_id, school_id) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING',
+                   (student['id'], course_id, current_user.school_id))
         db.commit()
     flash(f'{username} enrolled!', 'success')
     return redirect(url_for('courses.course_details', course_id=course_id))
@@ -206,8 +213,8 @@ def new_assignment(course_id):
         db = get_db()
         from db import db_cursor
         with db_cursor(db) as cursor:
-            cursor.execute('INSERT INTO assignments (course_id, title, description, due_date, attachment_path) VALUES (%s, %s, %s, %s, %s)',
-                       (course_id, request.form.get('title'), request.form.get('description'), request.form.get('due_date'), path))
+            cursor.execute('INSERT INTO assignments (course_id, title, description, due_date, attachment_path, school_id) VALUES (%s, %s, %s, %s, %s, %s)',
+                       (course_id, request.form.get('title'), request.form.get('description'), request.form.get('due_date'), path, current_user.school_id))
         db.commit()
         flash('Assignment posted!', 'success')
         return redirect(url_for('courses.course_details', course_id=course_id))
@@ -226,16 +233,16 @@ def submit_assignment(course_id, assignment_id):
         from db import db_cursor
         with db_cursor(db) as cursor:
             cursor.execute('''
-                INSERT INTO submissions (assignment_id, student_id, content, attachment_path)
-                VALUES (%s, %s, %s, %s)
-            ''', (assignment_id, current_user.id, request.form.get('content'), path))
+                INSERT INTO submissions (assignment_id, student_id, content, attachment_path, school_id)
+                VALUES (%s, %s, %s, %s, %s)
+            ''', (assignment_id, current_user.id, request.form.get('content'), path, current_user.school_id))
             
             # Notify Teacher
-            cursor.execute('SELECT teacher_id FROM courses WHERE id = %s', (course_id,))
+            cursor.execute('SELECT teacher_id FROM courses WHERE id = %s AND school_id = %s', (course_id, current_user.school_id))
             course = cursor.fetchone()
-            cursor.execute('SELECT title FROM assignments WHERE id = %s', (assignment_id,))
+            cursor.execute('SELECT title FROM assignments WHERE id = %s AND school_id = %s', (assignment_id, current_user.school_id))
             assign = cursor.fetchone()
-            add_notification(db, course['teacher_id'], f"New submission from {current_user.username} for {assign['title']}", 'info')
+            add_notification(db, course['teacher_id'], f"New submission from {current_user.username} for {assign['title']}", 'info', current_user.school_id)
             
             db.commit()
         flash('Work submitted!', 'success')
@@ -244,7 +251,7 @@ def submit_assignment(course_id, assignment_id):
     # For GET request, render a submission form
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute('SELECT * FROM assignments WHERE id = %s', (assignment_id,))
+        cursor.execute('SELECT * FROM assignments WHERE id = %s AND school_id = %s', (assignment_id, current_user.school_id))
         assignment = cursor.fetchone()
         if not assignment:
             flash('Assignment not found.', 'error')

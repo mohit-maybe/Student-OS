@@ -25,15 +25,15 @@ def inbox():
                             OR (m.recipient_id = u.id AND m.sender_id = %s)
             WHERE m.id IN (
                 SELECT MAX(id) FROM messages 
-                WHERE sender_id = %s OR recipient_id = %s 
+                WHERE (sender_id = %s OR recipient_id = %s) AND school_id = %s
                 GROUP BY CASE WHEN sender_id = %s THEN recipient_id ELSE sender_id END
             )
             ORDER BY m.created_at DESC
-        ''', (current_user.id, current_user.id, current_user.id, current_user.id, current_user.id))
+        ''', (current_user.id, current_user.id, current_user.id, current_user.id, current_user.school_id, current_user.id))
         conversations = cursor.fetchall()
 
         # Get unread count
-        cursor.execute('SELECT COUNT(*) FROM messages WHERE recipient_id = %s AND is_read = 0', (current_user.id,))
+        cursor.execute('SELECT COUNT(*) FROM messages WHERE recipient_id = %s AND is_read = 0 AND school_id = %s', (current_user.id, current_user.school_id))
         unread_total = cursor.fetchone()[0]
 
     return render_template('messages/inbox.html', conversations=conversations, unread_total=unread_total, user=current_user)
@@ -54,20 +54,20 @@ def chat(other_user_id):
                 SELECT m.*, u.username as sender_name, u.role as sender_role
                 FROM messages m
                 JOIN users u ON m.sender_id = u.id
-                WHERE m.recipient_id = 0
+                WHERE m.recipient_id = 0 AND m.school_id = %s
                 ORDER BY m.created_at ASC
-            ''')
+            ''', (current_user.school_id,))
             history = cursor.fetchall()
         else:
             # Direct Message Logic
-            cursor.execute('SELECT * FROM users WHERE id = %s', (other_user_id,))
+            cursor.execute('SELECT * FROM users WHERE id = %s AND school_id = %s', (other_user_id, current_user.school_id))
             other_user = cursor.fetchone()
             if not other_user:
                 flash('User not found.', 'error')
                 return redirect(url_for('messages.inbox'))
 
             # Mark as read
-            cursor.execute('UPDATE messages SET is_read = 1 WHERE sender_id = %s AND recipient_id = %s', (other_user_id, current_user.id))
+            cursor.execute('UPDATE messages SET is_read = 1 WHERE sender_id = %s AND recipient_id = %s AND school_id = %s', (other_user_id, current_user.id, current_user.school_id))
             db.commit()
 
             # Fetch history
@@ -75,10 +75,11 @@ def chat(other_user_id):
                 SELECT m.*, u.username as sender_name 
                 FROM messages m
                 JOIN users u ON m.sender_id = u.id
-                WHERE (m.sender_id = %s AND m.recipient_id = %s) 
-                   OR (m.sender_id = %s AND m.recipient_id = %s)
+                WHERE ((m.sender_id = %s AND m.recipient_id = %s) 
+                   OR (m.sender_id = %s AND m.recipient_id = %s))
+                   AND m.school_id = %s
                 ORDER BY m.created_at ASC
-            ''', (current_user.id, other_user_id, other_user_id, current_user.id))
+            ''', (current_user.id, other_user_id, other_user_id, current_user.id, current_user.school_id))
             history = cursor.fetchall()
 
     return render_template('messages/chat.html', other_user=other_user, history=history, user=current_user)
@@ -96,8 +97,8 @@ def send_message():
     db = get_db()
     from db import db_cursor
     with db_cursor(db) as cursor:
-        cursor.execute('INSERT INTO messages (sender_id, recipient_id, content) VALUES (%s, %s, %s)',
-                   (current_user.id, recipient_id, content))
+        cursor.execute('INSERT INTO messages (sender_id, recipient_id, content, school_id) VALUES (%s, %s, %s, %s)',
+                   (current_user.id, recipient_id, content, current_user.school_id))
     db.commit()
     
     return redirect(url_for('messages.chat', other_user_id=recipient_id))
@@ -109,6 +110,6 @@ def new_conversation():
     db = get_db()
     from db import db_cursor
     with db_cursor(db) as cursor:
-        cursor.execute('SELECT id, username, role FROM users WHERE id != %s', (current_user.id,))
+        cursor.execute('SELECT id, username, role FROM users WHERE id != %s AND school_id = %s', (current_user.id, current_user.school_id))
         users = cursor.fetchall()
     return render_template('messages/new.html', users=users, user=current_user)
