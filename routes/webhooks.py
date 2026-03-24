@@ -64,7 +64,7 @@ def tally_webhook():
         print(f"[Webhook] Sending Calendly link to {email} for {school_name}...")
             
         # Send email logic - Fallback to Google Apps Script if SMTP is blocked
-        email_api_url = os.environ.get("EMAIL_API_URL")
+        email_api_url = os.environ.get("EMAIL_API_URL", "").strip()
 
         # 1. Send the internal notification email to the admin
         admin_email = current_app.config.get('MAIL_USERNAME')
@@ -83,11 +83,14 @@ def tally_webhook():
         if admin_email:
             try:
                 if email_api_url:
-                    requests.post(email_api_url, json={
+                    admin_resp = requests.post(email_api_url, json={
                         "to": admin_email,
                         "subject": admin_subject,
                         "htmlBody": admin_html
                     }, timeout=10)
+                    print(f"[Webhook] Admin relay response: {admin_resp.status_code} - {admin_resp.text}")
+                    if admin_resp.status_code != 200:
+                        print(f"[Webhook] Admin relay FAILED: {admin_resp.text}")
                 else:
                     admin_msg = Message(subject=admin_subject, recipients=[admin_email])
                     admin_msg.html = admin_html
@@ -117,11 +120,14 @@ def tally_webhook():
         """
         
         if email_api_url:
-            requests.post(email_api_url, json={
+            school_resp = requests.post(email_api_url, json={
                 "to": email,
                 "subject": school_subject,
                 "htmlBody": school_html
             }, timeout=10)
+            print(f"[Webhook] School relay response: {school_resp.status_code} - {school_resp.text}")
+            if school_resp.status_code != 200:
+                return jsonify({'error': 'Email relay failed', 'details': school_resp.text}), 502
         else:
             msg = Message(subject=school_subject, recipients=[email])
             msg.body = f"Hello {contact_name},\n\nThank you for your interest in Student OS for {school_name}!\n\nWe would love to connect with you to discuss how our platform can benefit your institution and answer any questions you might have regarding pricing and features.\n\nPlease schedule a meeting with us at your earliest convenience using the link below:\nhttps://calendly.com/mohitpreets67/discussion-meeting\n\nLooking forward to speaking with you!\n\nBest regards,\nThe Student OS Team"
