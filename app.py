@@ -177,6 +177,11 @@ def index():
 def page_not_found(e):
     return render_template('404.html'), 404
 
+@app.route('/keep-alive')
+def keep_alive():
+    """Lightweight endpoint for external ping services to prevent sleeping."""
+    return {"status": "active", "timestamp": datetime.now().isoformat()}, 200
+
 @app.errorhandler(500)
 def internal_server_error(e):
     import traceback
