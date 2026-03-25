@@ -188,6 +188,7 @@ def init_db(app):
                 migration_sql += "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schools' AND column_name='enabled_features') THEN ALTER TABLE schools ADD COLUMN enabled_features TEXT DEFAULT 'classrooms,admissions,staff_management,courses,grades,attendance,exam_predictor,messages,group_chat'; END IF; "
                 migration_sql += "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schools' AND column_name='academic_session') THEN ALTER TABLE schools ADD COLUMN academic_session TEXT DEFAULT '2023-24'; END IF; "
                 migration_sql += "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schools' AND column_name='support_email') THEN ALTER TABLE schools ADD COLUMN support_email TEXT; END IF; "
+                migration_sql += "UPDATE schools SET enabled_features = 'classrooms,admissions,staff_management,courses,grades,attendance,exam_predictor,messages,group_chat' WHERE enabled_features IS NULL OR enabled_features = 'exam_predictor,group_chat'; "
                 migration_sql += " END $$;"
                 cursor.execute(migration_sql)
         
@@ -202,6 +203,9 @@ def init_db(app):
                     cursor.execute("ALTER TABLE schools ADD COLUMN academic_session TEXT DEFAULT '2023-24'")
                 if 'support_email' not in cols:
                     cursor.execute("ALTER TABLE schools ADD COLUMN support_email TEXT")
+                
+                # Data Migration to ensure existing schools have all features active
+                cursor.execute("UPDATE schools SET enabled_features = 'classrooms,admissions,staff_management,courses,grades,attendance,exam_predictor,messages,group_chat' WHERE enabled_features IS NULL OR enabled_features = 'exam_predictor,group_chat'")
 
         
         db.commit()
