@@ -2,14 +2,30 @@ import secrets
 import string
 import io
 import qrcode
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, send_file
+import csv
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, send_file, Response
 from flask_login import login_required, current_user
 from flask_mail import Message
 from werkzeug.security import generate_password_hash
 from db import get_db, db_cursor
 from helpers import generate_credentials
+from extensions import mail
 
 admissions_bp = Blueprint('admissions', __name__)
+
+@admissions_bp.route('/admissions/sample_csv')
+@login_required
+def download_sample_csv():
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['full_name', 'email', 'mobile', 'dob', 'gender', 'parent_name', 'parent_email'])
+    writer.writerow(['John Doe', 'john@example.com', '1234567890', '2010-01-01', 'Male', 'Jane Doe', 'jane@example.com'])
+    
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=student_import_sample.csv"}
+    )
 
 
 @admissions_bp.route('/students/<int:student_id>/qr')
@@ -219,7 +235,13 @@ def import_students():
         return redirect(url_for('admissions.enroll'))
 
     # Use io.StringIO to read the uploaded file as text
-    stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+    try:
+        content = file.stream.read().decode("UTF-8")
+    except UnicodeDecodeError:
+        file.stream.seek(0)
+        content = file.stream.read().decode("latin-1")
+    
+    stream = io.StringIO(content, newline=None)
     csv_input = csv.DictReader(stream)
     
     db = get_db()
@@ -232,6 +254,11 @@ def import_students():
             for row in csv_input:
                 full_name = row.get('full_name', '').strip()
                 email = row.get('email', '').strip()
+                mobile = row.get('mobile', '').strip()
+                dob = row.get('dob', '').strip()
+                gender = row.get('gender', '').strip()
+                parent_name = row.get('parent_name', '').strip()
+                parent_email = row.get('parent_email', '').strip()
                 
                 if not full_name or not email:
                     continue
@@ -251,9 +278,9 @@ def import_students():
                     admission_number = f"ADM{user_id:04d}"
                     cursor.execute(
                         '''INSERT INTO student_details 
-                        (user_id, full_name, email, admission_number, school_id) 
-                        VALUES (%s, %s, %s, %s, %s)''',
-                        (user_id, full_name, email, admission_number, current_user.school_id)
+                        (user_id, full_name, email, mobile, dob, gender, parent_name, parent_email, admission_number, school_id) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                        (user_id, full_name, email, mobile or None, dob or None, gender or None, parent_name or None, parent_email or None, admission_number, current_user.school_id)
                     )
                     
                     # 3. Send Credentials Email

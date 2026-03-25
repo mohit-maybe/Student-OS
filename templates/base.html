@@ -131,7 +131,26 @@
         {% endwith %}
     </div>
 
-    {% block content %}{% endblock %}
+    <main class="content-wrapper">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="app-footer">
+        <div class="footer-content">
+            <div class="footer-info">
+                <span>&copy; {{ current_year }} {{ current_school.name if current_school else 'Student OS' }}</span>
+                {% if current_school.academic_session %}
+                <span class="badge-session">{{ current_school.academic_session }}</span>
+                {% endif %}
+            </div>
+            {% if current_school.support_email %}
+            <div class="footer-support">
+                <i data-lucide="help-circle"></i>
+                <a href="mailto:{{ current_school.support_email }}">{{ current_school.support_email }}</a>
+            </div>
+            {% endif %}
+        </div>
+    </footer>
 
 
     <script>

@@ -2,12 +2,12 @@
     <div
         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; padding-top: 0.5rem;">
         <div class="brand" style="margin-bottom: 0;">
-            {% if current_school.logo_path %}
-            <img src="{{ url_for('academic.uploaded_file', filename=current_school.logo_path) }}" alt="Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 6px; margin-right: 12px;">
+            <i data-lucide="graduation-cap" style="margin-right: 12px;"></i>
+            {% if user.id == 1 or user.role == 'admin' %}
+                Student OS
             {% else %}
-            <i data-lucide="graduation-cap"></i>
+                {{ current_school.name if current_school else 'Student OS' }}
             {% endif %}
-            {{ current_school.name if current_school else 'Student OS' }}
         </div>
         <button id="mobile-close"
             style="display: none; background: var(--primary-light); border: none; color: var(--primary-color); cursor: pointer; padding: 0.5rem; border-radius: 0.5rem;">
@@ -22,6 +22,9 @@
                 <span>{{ _('Dashboard') }}</span>
             </a>
         </li>
+        {% set features = (current_school.enabled_features or 'classrooms,admissions,staff_management,courses,grades,attendance,exam_predictor,messages') %}
+        
+        {% if 'classrooms' in features %}
         <li>
             <a href="{{ url_for('classrooms.index') }}"
                 class="{{ 'active' if 'classrooms' in request.endpoint else '' }}">
@@ -29,7 +32,10 @@
                 <span>{{ _('My Classroom') if user.role == 'student' else _('Classrooms') }}</span>
             </a>
         </li>
+        {% endif %}
+
         {% if user.role in ['admin', 'teacher', 'principal'] %}
+        {% if 'admissions' in features %}
         <li>
             <a href="{{ url_for('admissions.enroll') }}"
                 class="{{ 'active' if 'admissions.enroll' in request.endpoint else '' }}">
@@ -37,7 +43,10 @@
                 <span>{{ _('Admission') }}</span>
             </a>
         </li>
+        {% endif %}
+
         {% if user.role == 'admin' %}
+        {% if 'staff_management' in features %}
         <li>
             <a href="{{ url_for('staff.list_staff') }}"
                 class="{{ 'active' if 'staff' in request.endpoint else '' }}">
@@ -45,6 +54,7 @@
                 <span>Staff Management</span>
             </a>
         </li>
+        {% endif %}
         <li>
             <a href="{{ url_for('schools.school_settings') }}"
                 class="{{ 'active' if 'schools.school_settings' in request.endpoint else '' }}">
@@ -63,7 +73,8 @@
         {% endif %}
         {% endif %}
         {% endif %}
-        {% if user.role != 'student' %}
+
+        {% if user.role != 'student' and 'courses' in features %}
         <li>
             <a href="{{ url_for('courses.courses') }}"
                 class="{{ 'active' if 'courses.courses' in request.endpoint else '' }}">
@@ -72,6 +83,8 @@
             </a>
         </li>
         {% endif %}
+
+        {% if 'grades' in features %}
         <li>
             <a href="{{ url_for('academic.grades') }}"
                 class="{{ 'active' if 'academic.grades' in request.endpoint else '' }}">
@@ -79,6 +92,9 @@
                 <span>{{ _('Grades') }}</span>
             </a>
         </li>
+        {% endif %}
+
+        {% if 'attendance' in features %}
         <li>
             <a href="{{ url_for('academic.attendance') }}"
                 class="{{ 'active' if 'academic.attendance' in request.endpoint else '' }}">
@@ -86,6 +102,9 @@
                 <span>{{ _('Attendance') }}</span>
             </a>
         </li>
+        {% endif %}
+
+        {% if 'exam_predictor' in features %}
         <li>
             <a href="{{ url_for('exam_predictor.dashboard') }}"
                 class="{{ 'active' if 'exam_predictor' in request.endpoint else '' }}">
@@ -93,6 +112,9 @@
                 <span>{{ _('AI Predictor') }}</span>
             </a>
         </li>
+        {% endif %}
+
+        {% if 'messages' in features %}
         <li>
             <a href="{{ url_for('messages.inbox') }}" class="{{ 'active' if 'messages' in request.endpoint else '' }}">
                 <i data-lucide="message-square"></i>
@@ -105,6 +127,7 @@
                 {% endif %}
             </a>
         </li>
+        {% endif %}
 
 
         <li>

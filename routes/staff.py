@@ -1,12 +1,28 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, Response
 from flask_login import login_required, current_user
 from flask_mail import Message
 from werkzeug.security import generate_password_hash
 from db import get_db, db_cursor
 from extensions import mail
 from helpers import generate_credentials
+import io
+import csv
 
 staff_bp = Blueprint('staff', __name__)
+
+@staff_bp.route('/staff/sample_csv')
+@login_required
+def download_sample_csv():
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['full_name', 'email', 'department', 'mobile', 'status'])
+    writer.writerow(['Professor Xavier', 'charles@example.com', 'Technology', '9876543210', 'Active'])
+    
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=staff_import_sample.csv"}
+    )
 
 def _require_admin():
     if current_user.role != 'admin':
@@ -144,7 +160,7 @@ def delete_teacher(user_id):
         db.rollback()
         flash(f'Error deleting staff: {str(e)}', 'error')
 
-    return redirect(url_for('staff.list_staff', school_id=target_school_id))
+    return redirect(url_for('staff.list_staff'))
 @staff_bp.route('/staff/import', methods=['POST'])
 @login_required
 def import_teachers():
@@ -159,8 +175,14 @@ def import_teachers():
         flash('Please upload a valid CSV file.', 'error')
         return redirect(url_for('staff.list_staff', school_id=target_school_id))
 
-    import io, csv
-    stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+    # Use io.StringIO to read the uploaded file as text
+    try:
+        content = file.stream.read().decode("UTF-8")
+    except UnicodeDecodeError:
+        file.stream.seek(0)
+        content = file.stream.read().decode("latin-1")
+    
+    stream = io.StringIO(content, newline=None)
     csv_input = csv.DictReader(stream)
     
     db = get_db()
@@ -174,6 +196,8 @@ def import_teachers():
                 full_name = row.get('full_name', '').strip()
                 email = row.get('email', '').strip()
                 department = row.get('department', 'General').strip()
+                mobile = row.get('mobile', '').strip()
+                status = row.get('status', 'Active').strip()
                 
                 if not full_name or not email:
                     continue
@@ -191,8 +215,8 @@ def import_teachers():
                     
                     # 2. Create Teacher Details
                     cursor.execute(
-                        'INSERT INTO teacher_details (user_id, full_name, email, department, school_id) VALUES (%s, %s, %s, %s, %s)',
-                        (user_id, full_name, email, department, target_school_id)
+                        'INSERT INTO teacher_details (user_id, full_name, email, mobile, department, status, school_id) VALUES (%s, %s, %s, %s, %s, %s, %s)',
+                        (user_id, full_name, email, mobile or None, department, status, target_school_id)
                     )
                     
                     # 3. Send Credentials Email

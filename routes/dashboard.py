@@ -40,9 +40,9 @@ def dashboard():
                 SELECT c.name, AVG(g.score) as avg_score 
                 FROM grades g 
                 JOIN courses c ON g.course_id = c.id 
-                WHERE g.student_id = %s 
+                WHERE g.student_id = %s AND g.school_id = %s
                 GROUP BY c.id, c.name
-            ''', (current_user.id,))
+            ''', (current_user.id, current_user.school_id))
             grades = cursor.fetchall()
 
             # Classroom Info
@@ -89,9 +89,9 @@ def dashboard():
                 FROM assignments a
                 JOIN courses c ON a.course_id = c.id
                 JOIN enrollments e ON c.id = e.course_id
-                WHERE e.student_id = %s
+                WHERE e.student_id = %s AND a.school_id = %s
                 ORDER BY a.created_at DESC LIMIT 5
-            ''', (current_user.id,))
+            ''', (current_user.id, current_user.school_id))
             recent_activity = cursor.fetchall()
 
         elif current_user.role == 'teacher':
@@ -99,9 +99,9 @@ def dashboard():
                 SELECT c.name, AVG(g.score) as avg_score 
                 FROM grades g 
                 JOIN courses c ON g.course_id = c.id 
-                WHERE c.teacher_id = %s 
+                WHERE c.teacher_id = %s AND c.school_id = %s
                 GROUP BY c.id, c.name
-            ''', (current_user.id,))
+            ''', (current_user.id, current_user.school_id))
             grades = cursor.fetchall()
             
             for g in grades:
@@ -112,8 +112,8 @@ def dashboard():
                 SELECT a.status, COUNT(*) as count 
                 FROM attendance a 
                 JOIN courses c ON a.course_id = c.id 
-                WHERE c.teacher_id = %s GROUP BY a.status
-            ''', (current_user.id,))
+                WHERE c.teacher_id = %s AND c.school_id = %s GROUP BY a.status
+            ''', (current_user.id, current_user.school_id))
             attendance = cursor.fetchall()
             
             att_dict = {row['status']: row['count'] for row in attendance}
@@ -121,8 +121,8 @@ def dashboard():
 
             cursor.execute('''
                 SELECT COUNT(DISTINCT e.student_id) 
-                FROM enrollments e JOIN courses c ON e.course_id = c.id WHERE c.teacher_id = %s
-            ''', (current_user.id,))
+                FROM enrollments e JOIN courses c ON e.course_id = c.id WHERE c.teacher_id = %s AND c.school_id = %s
+            ''', (current_user.id, current_user.school_id))
             total_students = cursor.fetchone()[0]
             
             avg_grade = f"{round(sum(chart_data['grade_values'])/len(chart_data['grade_values']), 1)}%" if chart_data['grade_values'] else "0%"
@@ -140,9 +140,9 @@ def dashboard():
                 JOIN assignments a ON s.assignment_id = a.id
                 JOIN courses c ON a.course_id = c.id
                 JOIN users u ON s.student_id = u.id
-                WHERE c.teacher_id = %s
+                WHERE c.teacher_id = %s AND c.school_id = %s
                 ORDER BY s.submission_date DESC LIMIT 5
-            ''', (current_user.id,))
+            ''', (current_user.id, current_user.school_id))
             recent_activity = cursor.fetchall()
 
         elif current_user.role == 'principal':

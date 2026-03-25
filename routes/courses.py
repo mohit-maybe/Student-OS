@@ -46,14 +46,10 @@ def search_courses():
     with db_cursor(db) as cursor:
         if current_user.role == 'teacher':
             cursor.execute('''
-                SELECT * FROM courses 
-                WHERE teacher_id = %s AND name ILIKE %s
-            ''', (current_user.id, f'%{query}%'))
-            courses = cursor.fetchall()
-        elif current_user.role == 'student':
-            cursor.execute('''
                 SELECT c.*, u.username as teacher_name 
-                WHERE teacher_id = %s AND name ILIKE %s AND school_id = %s
+                FROM courses c 
+                LEFT JOIN users u ON c.teacher_id = u.id
+                WHERE c.teacher_id = %s AND c.name ILIKE %s AND c.school_id = %s
             ''', (current_user.id, f'%{query}%', current_user.school_id))
             courses = cursor.fetchall()
         elif current_user.role == 'student':
@@ -65,7 +61,7 @@ def search_courses():
                 WHERE e.student_id = %s AND c.name ILIKE %s AND c.school_id = %s
             ''', (current_user.id, f'%{query}%', current_user.school_id))
             courses = cursor.fetchall()
-        else: # Admin sees all (filtered by school)
+        else: # Admin sees all
             cursor.execute('''
                 SELECT c.*, u.username as teacher_name 
                 FROM courses c 
@@ -83,7 +79,7 @@ def course_details(course_id):
     db = get_db()
     from db import db_cursor
     with db_cursor(db) as cursor:
-        cursor.execute('SELECT * FROM courses WHERE id = %s', (course_id,))
+        cursor.execute('SELECT * FROM courses WHERE id = %s AND school_id = %s', (course_id, current_user.school_id))
         course = cursor.fetchone()
         if not course:
             flash('Course not found.', 'error')
@@ -148,15 +144,15 @@ def edit_course(course_id):
     db = get_db()
     from db import db_cursor
     with db_cursor(db) as cursor:
-        cursor.execute('SELECT * FROM courses WHERE id = %s', (course_id,))
+        cursor.execute('SELECT * FROM courses WHERE id = %s AND school_id = %s', (course_id, current_user.school_id))
         course = cursor.fetchone()
         if not course or (current_user.role != 'admin' and course['teacher_id'] != current_user.id):
             flash('Access denied.', 'error')
             return redirect(url_for('courses.courses'))
             
         if request.method == 'POST':
-            cursor.execute('UPDATE courses SET name = %s, schedule = %s WHERE id = %s',
-                       (request.form.get('name'), request.form.get('schedule'), course_id))
+            cursor.execute('UPDATE courses SET name = %s, schedule = %s WHERE id = %s AND school_id = %s',
+                       (request.form.get('name'), request.form.get('schedule'), course_id, current_user.school_id))
             db.commit()
             flash('Course updated!', 'success')
             return redirect(url_for('courses.courses'))

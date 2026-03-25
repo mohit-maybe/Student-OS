@@ -4,21 +4,21 @@
 <div class="dashboard-layout">
     {% include "sidebar.html" %}
 
-    <main class="main-content">
+    <main class="main-content" style="padding: 4rem; padding-left: calc(var(--sidebar-width) + 4rem); overflow-y: auto;">
         <header class="page-header" style="margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 2rem;">
-            <div style="flex: 1; min-width: 300px;">
-                <span class="header-tag" style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">
-                    <i data-lucide="shield-check" style="width: 14px; vertical-align: middle; margin-right: 6px;"></i>
-                    Platform Infrastructure
-                </span>
-                <h1 style="font-size: clamp(2rem, 5vw, 3rem); margin: 1rem 0 0.5rem 0; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1;">Multi-Tenant <span style="color: #10b981;">Manager</span></h1>
-                <p style="color: var(--text-muted); margin: 0; font-size: 1.15rem; max-width: 600px;">Orchestrate and monitor independent school environments with global oversight.</p>
-            </div>
-            <button class="btn btn-primary" onclick="document.getElementById('addSchoolModal').style.display='flex'" style="height: 56px; padding: 0 2rem; border-radius: 16px; background: #10b981; border: none; font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
-                <i data-lucide="plus-circle" style="width: 20px;"></i>
-                Register Institution
-            </button>
-        </header>
+                <div style="flex: 1; min-width: 300px;">
+                    <span class="header-tag" style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">
+                        <i data-lucide="shield-check" style="width: 14px; vertical-align: middle; margin-right: 6px;"></i>
+                        Platform Infrastructure
+                    </span>
+                    <h1 style="font-size: clamp(2rem, 5vw, 3rem); margin: 1rem 0 0.5rem 0; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1;">Multi-Tenant <span style="color: #10b981;">Manager</span></h1>
+                    <p style="color: var(--text-muted); margin: 0; font-size: 1.15rem; max-width: 600px;">Orchestrate and monitor independent school environments with global oversight.</p>
+                </div>
+                <button class="btn btn-primary" onclick="document.getElementById('addSchoolModal').style.display='flex'" style="height: 56px; padding: 0 2rem; border-radius: 16px; background: #10b981; border: none; font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                    <i data-lucide="plus-circle" style="width: 20px;"></i>
+                    Register Institution
+                </button>
+            </header>
 
         <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-bottom: 3.5rem;">
             <div class="stat-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05)); border: 1px solid rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px);">
@@ -83,8 +83,13 @@
                             </td>
                             <td style="padding: 1.5rem 2rem;">
                                 <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                    <code style="background: rgba(16, 185, 129, 0.1); padding: 0.4rem 0.75rem; border-radius: 8px; color: #10b981; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;">{{ school.slug }}.studentos.com</code>
-                                    <a href="http://{{ school.slug }}.localhost:5000" target="_blank" style="color: var(--text-muted); transition: color 0.2s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='var(--text-muted)'">
+                                    {% set host_parts = request.host.split('.') %}
+                                    {% set base_host = request.host %}
+                                    {% if host_parts|length > 2 and host_parts[0] in ['www', 'app'] %}
+                                        {% set base_host = host_parts[1:]|join('.') %}
+                                    {% endif %}
+                                    <code style="background: rgba(16, 185, 129, 0.1); padding: 0.4rem 0.75rem; border-radius: 8px; color: #10b981; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;">{{ school.slug }}.{{ base_host }}</code>
+                                    <a href="//{{ school.slug }}.{{ request.host }}" target="_blank" style="color: var(--text-muted); transition: color 0.2s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='var(--text-muted)'">
                                         <i data-lucide="external-link" width="16"></i>
                                     </a>
                                 </div>

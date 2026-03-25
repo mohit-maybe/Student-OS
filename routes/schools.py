@@ -130,7 +130,9 @@ def school_settings():
 
     if request.method == 'POST':
         name = request.form.get('name')
-        primary_color = request.form.get('primary_color')
+        academic_session = request.form.get('academic_session', '2023-24')
+        support_email = request.form.get('support_email')
+        
         # Allow superadmin to change school_id they are editing
         submitted_school_id = request.form.get('school_id', target_school_id)
         
@@ -143,16 +145,32 @@ def school_settings():
             logo_path = filename
 
         with db_cursor(db) as cursor:
-            if logo_path:
-                cursor.execute(
-                    'UPDATE schools SET name = %s, primary_color = %s, logo_path = %s WHERE id = %s',
-                    (name, primary_color, logo_path, submitted_school_id)
-                )
+            # Superadmin can update features
+            if is_superadmin:
+                features_list = request.form.getlist('features')
+                enabled_features = ",".join(features_list)
+                
+                if logo_path:
+                    cursor.execute(
+                        'UPDATE schools SET name = %s, academic_session = %s, support_email = %s, logo_path = %s, enabled_features = %s WHERE id = %s',
+                        (name, academic_session, support_email, logo_path, enabled_features, submitted_school_id)
+                    )
+                else:
+                    cursor.execute(
+                        'UPDATE schools SET name = %s, academic_session = %s, support_email = %s, enabled_features = %s WHERE id = %s',
+                        (name, academic_session, support_email, enabled_features, submitted_school_id)
+                    )
             else:
-                cursor.execute(
-                    'UPDATE schools SET name = %s, primary_color = %s WHERE id = %s',
-                    (name, primary_color, submitted_school_id)
-                )
+                if logo_path:
+                    cursor.execute(
+                        'UPDATE schools SET name = %s, academic_session = %s, support_email = %s, logo_path = %s WHERE id = %s',
+                        (name, academic_session, support_email, logo_path, submitted_school_id)
+                    )
+                else:
+                    cursor.execute(
+                        'UPDATE schools SET name = %s, academic_session = %s, support_email = %s WHERE id = %s',
+                        (name, academic_session, support_email, submitted_school_id)
+                    )
         db.commit()
         flash('School settings updated successfully!', 'success')
         return redirect(url_for('schools.school_settings', school_id=submitted_school_id))

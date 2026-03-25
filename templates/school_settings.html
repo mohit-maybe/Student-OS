@@ -4,114 +4,214 @@
 <div class="dashboard-layout">
     {% include "sidebar.html" %}
 
-    <main class="main-content">
-        <header class="page-header" style="margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 2rem;">
-            <div style="flex: 1; min-width: 300px;">
-                <span class="header-tag" style="background: var(--primary-light); color: var(--primary-color);">Institutional Management</span>
-                <h1 style="font-size: clamp(2rem, 5vw, 2.5rem); margin: 0.5rem 0; font-weight: 800;">School Settings</h1>
-                <p style="color: var(--text-muted); margin: 0; font-size: 1.1rem;">Customize your institution's profile, branding, and visibility.</p>
-            </div>
-            
+    <main class="main-content" style="padding: 4rem; padding-left: calc(var(--sidebar-width) + 4rem); overflow-y: auto;">
+        <header class="page-header" style="margin-bottom: 3rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 2rem;">
+                    <div>
+                        <span style="color: {{ school.primary_color or 'var(--primary-color)' }}; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.1em;">Settings</span>
+                        <h1 style="font-size: 2.25rem; margin: 0.5rem 0; font-weight: 800;">School Profile</h1>
+                        <p style="color: var(--text-muted); margin: 0;">Manage your institution's configuration and modules.</p>
+                    </div>
+                    
+                    {% if is_superadmin %}
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Switch:</span>
+                        <select onchange="window.location.href='{{ url_for('schools.school_settings') }}?school_id=' + this.value" style="background: transparent; border: none; color: var(--text-main); font-weight: 600; cursor: pointer; outline: none; font-size: 0.9rem;">
+                            {% for s in all_schools %}
+                            <option value="{{ s.id }}" {% if s.id == school.id %}selected{% endif %} style="background: #1a1c23; color: white;">{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                </div>
+            </header>
+
+        <form action="{{ url_for('schools.school_settings') }}" method="POST" enctype="multipart/form-data" style="max-width: 800px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% if is_superadmin %}
-            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 16px; padding: 0.75rem 1.25rem; display: flex; align-items: center; gap: 1rem;">
-                <label style="font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Switch Institution</label>
-                <select onchange="window.location.href='{{ url_for('schools.school_settings') }}?school_id=' + this.value" style="background: transparent; border: none; color: var(--text-main); font-weight: 600; font-size: 1rem; cursor: pointer; outline: none;">
-                    {% for s in all_schools %}
-                    <option value="{{ s.id }}" {% if s.id == school.id %}selected{% endif %} style="background: #1a1c23; color: white;">{{ s.name }}</option>
-                    {% endfor %}
-                </select>
-                <i data-lucide="chevron-down" style="width: 16px; color: var(--text-muted);"></i>
+            <input type="hidden" name="school_id" value="{{ school.id }}">
+            {% endif %}
+
+            <!-- Core Settings Section -->
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 24px; padding: 2.5rem; margin-bottom: 2rem;">
+                <h3 style="margin: 0 0 2rem 0; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
+                    <i data-lucide="info" style="width: 20px; color: {{ school.primary_color }};"></i>
+                    General Information
+                </h3>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div class="form-group">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.75rem;">Institution Name</label>
+                        <input type="text" name="name" value="{{ school.name }}" style="width: 100%; padding: 1rem; border-radius: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff; outline: none;" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.75rem;">Access URL</label>
+                        <div style="padding: 1rem; border-radius: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); color: #10b981; font-family: monospace;">
+                            {{ school.slug }}.studentos.com
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+                    <div class="form-group">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.75rem;">Current Academic Session</label>
+                        <input type="text" name="academic_session" value="{{ school.academic_session or '2023-24' }}" placeholder="e.g. 2023-24" style="width: 100%; padding: 1rem; border-radius: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff; outline: none;">
+                    </div>
+
+                    <div class="form-group">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.75rem;">Support Contact Email</label>
+                        <input type="email" name="support_email" value="{{ school.support_email or '' }}" placeholder="support@institution.com" style="width: 100%; padding: 1rem; border-radius: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff; outline: none;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr; gap: 2rem; margin-top: 2rem;">
+                    <div class="form-group">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.75rem;">Institutional Logo</label>
+                        <div style="position: relative;">
+                            <input type="file" name="logo" accept="image/*" id="logoFile" style="display: none;" onchange="document.getElementById('file-status').textContent = this.files[0].name">
+                            <button type="button" onclick="document.getElementById('logoFile').click()" style="width: 100%; padding: 0.85rem; background: rgba(255,255,255,0.05); border: 1px dashed var(--border-color); border-radius: 12px; color: #fff; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                <i data-lucide="upload" width="16"></i>
+                                <span>Change Logo</span>
+                            </button>
+                            <div id="file-status" style="font-size: 0.7rem; color: #10b981; margin-top: 0.5rem; text-align: center;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature Checklist Section (Organized List) -->
+            {% if is_superadmin %}
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 24px; padding: 2.5rem; margin-bottom: 2rem;">
+                <h3 style="margin: 0 0 1.5rem 0; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
+                    <i data-lucide="layers" style="width: 20px; color: #10b981;"></i>
+                    Allocated Features
+                </h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">Toggle platform capabilities for this institution.</p>
+
+                {% set active_features = (school.enabled_features or '') %}
+                
+                <div style="display: flex; flex-direction: column; border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; overflow: hidden;">
+                    <!-- Feature: Classrooms -->
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; background: rgba(255,255,255,0.01); border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='rgba(255,255,255,0.01)'">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="layout" style="width: 16px; color: #10b981;"></i>
+                            </div>
+                            <div>
+                                <span style="display: block; font-weight: 600; color: #fff;">Classroom Management</span>
+                                <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">Manage sections, class levels, and academic years.</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" name="features" value="classrooms" {% if 'classrooms' in active_features %}checked{% endif %} style="width: 20px; height: 20px; accent-color: #10b981;">
+                    </label>
+
+                    <!-- Feature: Admissions -->
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; background: rgba(255,255,255,0.01); border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='rgba(255,255,255,0.01)'">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="user-plus" style="width: 16px; color: #10b981;"></i>
+                            </div>
+                            <div>
+                                <span style="display: block; font-weight: 600; color: #fff;">Student Admissions</span>
+                                <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">Process new student registrations and enrollments.</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" name="features" value="admissions" {% if 'admissions' in active_features %}checked{% endif %} style="width: 20px; height: 20px; accent-color: #10b981;">
+                    </label>
+
+                    <!-- Feature: Staff -->
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; background: rgba(255,255,255,0.01); border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='rgba(255,255,255,0.01)'">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="shield-check" style="width: 16px; color: #10b981;"></i>
+                            </div>
+                            <div>
+                                <span style="display: block; font-weight: 600; color: #fff;">Staff Management</span>
+                                <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">Add and manage teacher and administrator accounts.</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" name="features" value="staff_management" {% if 'staff_management' in active_features %}checked{% endif %} style="width: 20px; height: 20px; accent-color: #10b981;">
+                    </label>
+
+                    <!-- Feature: Courses -->
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; background: rgba(255,255,255,0.01); border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='rgba(255,255,255,0.01)'">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="book-open" style="width: 16px; color: #10b981;"></i>
+                            </div>
+                            <div>
+                                <span style="display: block; font-weight: 600; color: #fff;">Course Management</span>
+                                <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">Create curriculum subjects and assign teachers.</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" name="features" value="courses" {% if 'courses' in active_features %}checked{% endif %} style="width: 20px; height: 20px; accent-color: #10b981;">
+                    </label>
+
+                    <!-- Feature: Grades -->
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; background: rgba(255,255,255,0.01); border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='rgba(255,255,255,0.01)'">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="award" style="width: 16px; color: #10b981;"></i>
+                            </div>
+                            <div>
+                                <span style="display: block; font-weight: 600; color: #fff;">Grading System</span>
+                                <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">Track student marks, assessments, and reports.</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" name="features" value="grades" {% if 'grades' in active_features %}checked{% endif %} style="width: 20px; height: 20px; accent-color: #10b981;">
+                    </label>
+
+                    <!-- Feature: Attendance -->
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; background: rgba(255,255,255,0.01); border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='rgba(255,255,255,0.01)'">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="calendar-check" style="width: 16px; color: #10b981;"></i>
+                            </div>
+                            <div>
+                                <span style="display: block; font-weight: 600; color: #fff;">Attendance Tracking</span>
+                                <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">Monitor student daily presence and records.</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" name="features" value="attendance" {% if 'attendance' in active_features %}checked{% endif %} style="width: 20px; height: 20px; accent-color: #10b981;">
+                    </label>
+
+                    <!-- Feature: AI Predictor -->
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; background: rgba(255,255,255,0.01); border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='rgba(255,255,255,0.01)'">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(79, 70, 229, 0.1); display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="sparkles" style="width: 16px; color: #6366f1;"></i>
+                            </div>
+                            <div>
+                                <span style="display: block; font-weight: 600; color: #fff;">AI Exam Predictor</span>
+                                <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">Enable predictive analytics and academic modeling.</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" name="features" value="exam_predictor" {% if 'exam_predictor' in active_features %}checked{% endif %} style="width: 20px; height: 20px; accent-color: #10b981;">
+                    </label>
+
+                    <!-- Feature: Messaging -->
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; background: rgba(255,255,255,0.01); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='rgba(255,255,255,0.01)'">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="message-square" style="width: 16px; color: #10b981;"></i>
+                            </div>
+                            <div>
+                                <span style="display: block; font-weight: 600; color: #fff;">Messaging & Group Chat</span>
+                                <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">Real-time communication and channel announcements.</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" name="features" value="messages" {% if 'messages' in active_features %}checked{% endif %} style="width: 20px; height: 20px; accent-color: #10b981;">
+                    </label>
+                </div>
             </div>
             {% endif %}
-        </header>
 
-        <div class="card glass-card" style="max-width: 900px; padding: 4rem; border-radius: 32px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 40px 100px -20px rgba(0,0,0,0.5); margin-top: 1rem; position: relative; overflow: hidden;">
-            <!-- Decorative Background Element -->
-            <div style="position: absolute; top: -100px; right: -100px; width: 300px; height: 300px; background: {{ school.primary_color }}10; border-radius: 50%; filter: blur(60px); z-index: 0;"></div>
-            
-            <form action="{{ url_for('schools.school_settings') }}" method="POST" enctype="multipart/form-data" style="position: relative; z-index: 1;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                {% if is_superadmin %}
-                <input type="hidden" name="school_id" value="{{ school.id }}">
-                {% endif %}
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 4rem;">
-                    <!-- Basic Info -->
-                    <div style="display: flex; flex-direction: column; gap: 2.5rem;">
-                        <div style="padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <h3 style="margin: 0; font-size: 1.5rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 1rem;">
-                                <div style="width: 40px; height: 40px; border-radius: 12px; background: {{ school.primary_color }}20; display: flex; align-items: center; justify-content: center;">
-                                    <i data-lucide="info" style="color: {{ school.primary_color }}; width: 20px;"></i>
-                                </div>
-                                Core Identity
-                            </h3>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label style="display: block; font-weight: 700; margin-bottom: 1rem; color: var(--text-muted); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.1em;">Institution Name</label>
-                            <input type="text" name="name" value="{{ school.name }}" class="form-input" required style="width: 100%; height: 60px; padding: 0 1.5rem; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-main); font-size: 1.1rem; transition: all 0.3s;" onfocus="this.style.borderColor='{{ school.primary_color }}'; this.style.boxShadow='0 0 0 4px {{ school.primary_color }}15'">
-                        </div>
-
-                        <div class="form-group">
-                            <label style="display: block; font-weight: 700; margin-bottom: 1rem; color: var(--text-muted); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.1em;">Infrastructure Slug</label>
-                            <div style="display: flex; align-items: center; background: rgba(0,0,0,0.15); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); padding: 0 1.5rem; height: 60px;">
-                                <code style="color: #10b981; font-family: 'JetBrains Mono', monospace; font-size: 1rem;">{{ school.slug }}</code>
-                                <span style="margin-left: 0.5rem; color: var(--text-muted); opacity: 0.5;">.studentos.com</span>
-                                <i data-lucide="lock" style="width: 14px; margin-left: auto; color: var(--text-muted);"></i>
-                            </div>
-                            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.75rem; font-style: italic;">Managed by platform architecture.</p>
-                        </div>
-                    </div>
-
-                    <!-- Branding Section -->
-                    <div style="display: flex; flex-direction: column; gap: 2.5rem;">
-                        <div style="padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <h3 style="margin: 0; font-size: 1.5rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 1rem;">
-                                <div style="width: 40px; height: 40px; border-radius: 12px; background: #ec489920; display: flex; align-items: center; justify-content: center;">
-                                    <i data-lucide="palette" style="color: #ec4899; width: 20px;"></i>
-                                </div>
-                                Visual Presence
-                            </h3>
-                        </div>
-
-                        <div class="form-group">
-                            <label style="display: block; font-weight: 700; margin-bottom: 1rem; color: var(--text-muted); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.1em;">Brand Primary Color</label>
-                            <div style="display: flex; align-items: center; gap: 1.5rem; background: rgba(255,255,255,0.03); padding: 1.25rem; border-radius: 20px; border: 1px solid var(--border-color);">
-                                <input type="color" name="primary_color" value="{{ school.primary_color }}" style="width: 70px; height: 70px; border: none; padding: 0; border-radius: 14px; cursor: pointer; background: none;">
-                                <div>
-                                    <div style="font-weight: 800; font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; color: var(--text-main);">{{ school.primary_color|upper }}</div>
-                                    <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0.25rem 0 0 0;">Unified accent across student portal.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label style="display: block; font-weight: 700; margin-bottom: 1rem; color: var(--text-muted); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.1em;">Institutional Logo</label>
-                            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-                                {% if school.logo_path %}
-                                <div style="width: 140px; height: 140px; border-radius: 24px; overflow: hidden; border: 2px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); display: flex; align-items: center; justify-content: center; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-                                    <img src="{{ url_for('academic.uploaded_file', filename=school.logo_path) }}" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
-                                </div>
-                                {% endif %}
-                                <div style="position: relative;">
-                                    <input type="file" name="logo" accept="image/*" id="logoFile" style="display: none;">
-                                    <button type="button" onclick="document.getElementById('logoFile').click()" style="width: 100%; height: 56px; background: rgba(255,255,255,0.05); border: 1px dashed var(--border-color); border-radius: 14px; color: var(--text-main); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.75rem; cursor: pointer; transition: all 0.2s;">
-                                        <i data-lucide="upload-cloud" width="20"></i>
-                                        Upload New Identity
-                                    </button>
-                                </div>
-                                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0; text-align: center;">Optimal: Square PNG, max 2MB.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="margin-top: 5rem; padding-top: 2.5rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: flex-end; gap: 2rem;">
-                    <button type="button" class="btn" style="background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 0 2.5rem; height: 60px; border-radius: 18px; font-weight: 600; transition: all 0.2s;">Discard</button>
-                    <button type="submit" class="btn btn-primary" style="padding: 0 4rem; height: 60px; border-radius: 18px; font-weight: 800; background: {{ school.primary_color }}; box-shadow: 0 15px 35px {{ school.primary_color }}40; border: none; font-size: 1rem; letter-spacing: 0.02em;">Deploy Changes</button>
-                </div>
-            </form>
-        </div>
+            <div style="display: flex; justify-content: flex-end; gap: 1.5rem; margin-top: 3rem;">
+                <button type="button" class="btn" style="background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 0.75rem 2rem; border-radius: 12px; font-weight: 600;">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="background: var(--primary-color); color: #fff; padding: 0.75rem 3rem; border-radius: 12px; font-weight: 700; border: none; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);">Save Changes</button>
+            </div>
+        </form>
     </main>
 </div>
 {% endblock %}

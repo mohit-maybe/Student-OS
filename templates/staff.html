@@ -273,8 +273,14 @@
         <button onclick="document.getElementById('importStaffModal').style.display='none'" style="position: absolute; right: 2rem; top: 2rem; background: rgba(255,255,255,0.05); border: none; color: var(--text-muted); width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
             <i data-lucide="x"></i>
         </button>
-        <h2 style="margin: 0 0 1rem 0; font-size: 2rem; font-weight: 800;">Bulk Ingestion</h2>
-        <p style="color: var(--text-muted); margin-bottom: 2rem; line-height: 1.6;">Upload a CSV file with columns: <code>full_name</code>, <code>email</code>, <code>department</code>.</p>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6;">Upload a CSV file with columns: <code>full_name</code>, <code>email</code>, <code>department</code>.</p>
+        
+        <div style="background: rgba(99, 102, 241, 0.05); padding: 1.25rem; border-radius: 16px; border: 1px solid rgba(99, 102, 241, 0.2); margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <i data-lucide="download" style="width: 18px; color: #6366f1;"></i>
+                <a href="{{ url_for('staff.download_sample_csv') }}" style="color: #6366f1; font-weight: 700; font-size: 0.9rem; text-decoration: none;">Download Sample Registry</a>
+            </div>
+        </div>
         
         <form action="{{ url_for('staff.import_teachers') }}" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

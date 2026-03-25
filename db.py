@@ -28,7 +28,7 @@ def get_db():
             try:
                 if db_url.startswith('postgres://'):
                     db_url = db_url.replace('postgres://', 'postgresql://', 1)
-                db = g._database = psycopg2.connect(db_url, cursor_factory=DictCursor)
+                db = g._database = psycopg2.connect(db_url, cursor_factory=DictCursor, connect_timeout=10)
                 print("[OK] Successfully connected to PostgreSQL")
             except Exception as e:
                 print(f"[ERROR] Postgres connection failed: {e}")
@@ -185,8 +185,24 @@ def init_db(app):
                     migration_sql += f"IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='{table}' AND column_name='created_at') THEN ALTER TABLE {table} ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP; END IF; "
                 migration_sql += "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schools' AND column_name='created_at') THEN ALTER TABLE schools ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP; END IF; "
                 migration_sql += "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='teacher_details' AND column_name='status') THEN ALTER TABLE teacher_details ADD COLUMN status TEXT DEFAULT 'Active'; END IF; "
+                migration_sql += "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schools' AND column_name='enabled_features') THEN ALTER TABLE schools ADD COLUMN enabled_features TEXT DEFAULT 'classrooms,admissions,staff_management,courses,grades,attendance,exam_predictor,messages,group_chat'; END IF; "
+                migration_sql += "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schools' AND column_name='academic_session') THEN ALTER TABLE schools ADD COLUMN academic_session TEXT DEFAULT '2023-24'; END IF; "
+                migration_sql += "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='schools' AND column_name='support_email') THEN ALTER TABLE schools ADD COLUMN support_email TEXT; END IF; "
                 migration_sql += " END $$;"
                 cursor.execute(migration_sql)
+        
+        # SQLite migration for enabled_features
+        if is_sqlite:
+            with db_cursor(db) as cursor:
+                cursor.execute("PRAGMA table_info(schools)")
+                cols = [row[1] for row in cursor.fetchall()]
+                if 'enabled_features' not in cols:
+                    cursor.execute("ALTER TABLE schools ADD COLUMN enabled_features TEXT DEFAULT 'classrooms,admissions,staff_management,courses,grades,attendance,exam_predictor,messages,group_chat'")
+                if 'academic_session' not in cols:
+                    cursor.execute("ALTER TABLE schools ADD COLUMN academic_session TEXT DEFAULT '2023-24'")
+                if 'support_email' not in cols:
+                    cursor.execute("ALTER TABLE schools ADD COLUMN support_email TEXT")
+
         
         db.commit()
         print("[OK] Database migrations complete.")

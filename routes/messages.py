@@ -97,6 +97,13 @@ def send_message():
     db = get_db()
     from db import db_cursor
     with db_cursor(db) as cursor:
+        # Security: Verify recipient belongs to the same school
+        if recipient_id != '0': # Skip check for group chat
+            cursor.execute('SELECT id FROM users WHERE id = %s AND school_id = %s', (recipient_id, current_user.school_id))
+            if not cursor.fetchone():
+                flash('Invalid recipient.', 'error')
+                return redirect(url_for('messages.inbox'))
+
         cursor.execute('INSERT INTO messages (sender_id, recipient_id, content, school_id) VALUES (%s, %s, %s, %s)',
                    (current_user.id, recipient_id, content, current_user.school_id))
     db.commit()

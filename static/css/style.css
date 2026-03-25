@@ -1455,3 +1455,85 @@ input:checked+.slider:before {
     box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
     pointer-events: none;
 }
+
+/* Institutional Footer */
+.app-footer {
+    padding: 1.5rem 2rem;
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+    z-index: 10;
+}
+
+.footer-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.footer-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.badge-session {
+    background: var(--primary-light);
+    color: var(--primary-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 2rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    border: 1px solid var(--primary-color);
+}
+
+.footer-support {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.footer-support i {
+    width: 16px;
+    height: 16px;
+}
+
+.footer-support a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.footer-support a:hover {
+    text-decoration: underline;
+}
+
+/* Ensure content pushes footer down */
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+.content-wrapper {
+    flex: 1 0 auto;
+}
+
+@media (max-width: 768px) {
+    .app-footer {
+        padding-bottom: 5rem; /* Space for mobile nav if any */
+        text-align: center;
+    }
+    .footer-content {
+        flex-direction: column;
+    }
+}

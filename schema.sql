@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS schools (
     slug TEXT UNIQUE NOT NULL,
     logo_path TEXT,
     primary_color TEXT DEFAULT '#4f46e5',
+    enabled_features TEXT DEFAULT 'classrooms,admissions,staff_management,courses,grades,attendance,exam_predictor,messages,group_chat',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

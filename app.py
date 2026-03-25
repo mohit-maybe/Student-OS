@@ -123,7 +123,8 @@ def inject_school_context():
         
     return dict(
         current_school=school,
-        unread_messages_count=unread_count
+        unread_messages_count=unread_count,
+        current_year=datetime.now().year
     )
 
 from datetime import datetime

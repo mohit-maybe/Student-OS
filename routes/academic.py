@@ -54,9 +54,9 @@ def grades():
             ''', (current_user.id, current_user.school_id))
             grades = cursor.fetchall()
             
-        cursor.execute("SELECT * FROM users WHERE role = 'student'")
+        cursor.execute("SELECT * FROM users WHERE role = 'student' AND school_id = %s", (current_user.school_id,))
         students = cursor.fetchall()
-        cursor.execute('SELECT * FROM courses WHERE teacher_id = %s', (current_user.id,))
+        cursor.execute('SELECT * FROM courses WHERE teacher_id = %s AND school_id = %s', (current_user.id, current_user.school_id))
         my_courses = cursor.fetchall()
     return render_template('grades.html', grades=grades, courses=my_courses, students=students, user=current_user)
 
@@ -100,9 +100,9 @@ def attendance():
             logs = cursor.fetchall()
 
             
-        cursor.execute("SELECT * FROM users WHERE role = 'student'")
+        cursor.execute("SELECT * FROM users WHERE role = 'student' AND school_id = %s", (current_user.school_id,))
         students = cursor.fetchall()
-        cursor.execute('SELECT * FROM courses WHERE teacher_id = %s', (current_user.id,))
+        cursor.execute('SELECT * FROM courses WHERE teacher_id = %s AND school_id = %s', (current_user.id, current_user.school_id))
         my_courses = cursor.fetchall()
     return render_template('attendance.html', attendance=logs, courses=my_courses, students=students, user=current_user)
 
@@ -276,7 +276,6 @@ def save_remarks():
     return redirect(request.referrer)
 
 @academic_bp.route('/uploads/<filename>')
-@login_required
 def uploaded_file(filename):
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
 
