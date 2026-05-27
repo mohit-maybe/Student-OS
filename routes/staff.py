@@ -81,7 +81,7 @@ def add_teacher():
     mobile = request.form.get('mobile', '').strip()
     department = request.form.get('department', '').strip()
     role = request.form.get('role', 'teacher') # Default to teacher
-    target_school_id = request.form.get('school_id', current_user.school_id)
+    target_school_id = int(request.form.get('school_id', current_user.school_id))
 
     if not full_name or not email:
         flash('Name and Email are required.', 'error')
@@ -108,35 +108,42 @@ def add_teacher():
             )
         db.commit()
 
-        # 3. Send Email
-        msg = Message(
-            'Welcome to the Faculty - Your OS Credentials',
-            recipients=[email]
-        )
-        msg.body = f"""
-        Hello {full_name},
+        # 3. Send Email (only if mail is configured)
+        mail_configured = current_app.config.get('MAIL_USERNAME') and current_app.config.get('MAIL_PASSWORD')
+        if mail_configured:
+            try:
+                msg = Message(
+                    'Welcome to the Faculty - Your OS Credentials',
+                    recipients=[email]
+                )
+                msg.body = f"""
+                Hello {full_name},
 
-        Welcome to the team! Your teacher account for the Student OS platform has been created.
+                Welcome to the team! Your teacher account for the Student OS platform has been created.
 
-        Your Login Credentials:
-        -----------------------
-        Portal: {request.host_url}
-        Username: {username}
-        Password: {password}
+                Your Login Credentials:
+                -----------------------
+                Portal: {request.host_url}
+                Username: {username}
+                Password: {password}
 
-        Please login and update your profile settings once you have verified access.
+                Please login and update your profile settings once you have verified access.
 
-        Best Regards,
-        Admin Team
-        """
-        try:
-            mail.send(msg)
-            flash(f'Teacher {full_name} added! Credentials sent to {email}.', 'success')
-        except Exception as mail_err:
-            flash(f'Teacher added, but email notification failed: {str(mail_err)}', 'warning')
+                Best Regards,
+                Admin Team
+                """
+                mail.send(msg)
+                flash(f'Teacher {full_name} added! Credentials sent to {email}.', 'success')
+            except Exception as mail_err:
+                flash(f'Teacher added, but email notification failed: {str(mail_err)}', 'warning')
+        else:
+            flash(f'Teacher {full_name} added successfully! Username: {username}, Password: {password}', 'success')
 
     except Exception as e:
         db.rollback()
+        import traceback
+        print(f"Error adding teacher: {str(e)}")
+        print(traceback.format_exc())
         flash(f'Error adding teacher: {str(e)}', 'error')
 
     return redirect(url_for('staff.list_staff', school_id=target_school_id))
@@ -168,7 +175,7 @@ def import_teachers():
         flash('Only admins can bulk import staff.', 'error')
         return redirect(url_for('dashboard.dashboard'))
     
-    target_school_id = request.form.get('school_id', current_user.school_id)
+    target_school_id = int(request.form.get('school_id', current_user.school_id))
 
     file = request.files.get('file')
     if not file or not file.filename.endswith('.csv'):
@@ -254,7 +261,7 @@ def update_staff(user_id):
     department = request.form.get('department')
     role = request.form.get('role')
     status = request.form.get('status')
-    target_school_id = request.form.get('school_id', current_user.school_id)
+    target_school_id = int(request.form.get('school_id', current_user.school_id))
     
     db = get_db()
     try:
@@ -279,7 +286,7 @@ def toggle_staff_status(user_id):
     if redir: return redir
     
     new_status = request.form.get('status')
-    target_school_id = request.form.get('school_id', current_user.school_id)
+    target_school_id = int(request.form.get('school_id', current_user.school_id))
     db = get_db()
     try:
         with db_cursor(db) as cursor:
