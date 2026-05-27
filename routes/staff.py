@@ -7,8 +7,18 @@ from extensions import mail
 from helpers import generate_credentials
 import io
 import csv
+import threading
 
 staff_bp = Blueprint('staff', __name__)
+
+def send_email_async(app, msg):
+    """Send email in a background thread to avoid blocking the request."""
+    with app.app_context():
+        try:
+            mail.send(msg)
+            print(f"[EMAIL] Email sent successfully to {msg.recipients}")
+        except Exception as e:
+            print(f"[EMAIL ERROR] Failed to send email: {str(e)}")
 
 @staff_bp.route('/staff/sample_csv')
 @login_required
@@ -108,7 +118,7 @@ def add_teacher():
             )
         db.commit()
 
-        # 3. Send Email with Login Credentials
+        # 3. Send Email with Login Credentials (async to prevent timeout)
         try:
             mail_configured = current_app.config.get('MAIL_USERNAME') and current_app.config.get('MAIL_PASSWORD')
             if mail_configured:
@@ -162,8 +172,10 @@ def add_teacher():
                 </body>
                 </html>
                 """
-                mail.send(msg)
-                print(f"[EMAIL] Credentials sent successfully to {email} for {full_name}")
+                # Send email in background thread to prevent timeout
+                thread = threading.Thread(target=send_email_async, args=(current_app._get_current_object(), msg))
+                thread.start()
+                print(f"[EMAIL] Sending credentials email to {email} in background")
                 flash(f'Staff member {full_name} added successfully! Login credentials sent to {email}.', 'success')
             else:
                 print(f"[EMAIL] Mail not configured. Displaying credentials for {full_name}")
@@ -261,7 +273,7 @@ def import_teachers():
                         (user_id, full_name, email, mobile or None, department, status, target_school_id)
                     )
                     
-                    # 3. Send Credentials Email
+                    # 3. Send Credentials Email (async to prevent timeout)
                     try:
                         mail_configured = current_app.config.get('MAIL_USERNAME') and current_app.config.get('MAIL_PASSWORD')
                         if mail_configured:
@@ -315,8 +327,10 @@ def import_teachers():
                             </body>
                             </html>
                             """
-                            mail.send(msg)
-                            print(f"[EMAIL] Credentials sent successfully to {email} for {full_name}")
+                            # Send email in background thread to prevent timeout
+                            thread = threading.Thread(target=send_email_async, args=(current_app._get_current_object(), msg))
+                            thread.start()
+                            print(f"[EMAIL] Sending credentials email to {email} in background")
                         else:
                             print(f"[EMAIL] Mail not configured for {email}")
                     except Exception as mail_err:
