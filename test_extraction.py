@@ -11,11 +11,7 @@ files = [
 for f in files:
     if os.path.exists(f):
         print(f"DEBUG: Extracting from {f}")
-        text = ""
-        if f.endswith('.pdf'):
-            text = engine.extract_text_from_pdf(f)
-        elif f.endswith('.docx'):
-            print("DEBUG: DOCX detected - not currently supported in ai_engine!")
+        text = engine.extract_text_from_file(f)
         
         print(f"DEBUG: Extracted text length: {len(text)}")
         if len(text) > 0:

@@ -17,7 +17,13 @@ def grades():
     from db import db_cursor
     with db_cursor(db) as cursor:
         if request.method == 'POST' and current_user.role == 'teacher':
-            score = float(request.form.get('score', 0))
+            try:
+                score_raw = request.form.get('score', '0')
+                score = float(score_raw) if score_raw else 0.0
+            except ValueError:
+                flash('Invalid score format. Please enter a number.', 'error')
+                return redirect(url_for('academic.grades'))
+
             if not (0 <= score <= 100):
                 flash('Score must be between 0 and 100.', 'error')
                 return redirect(url_for('academic.grades'))

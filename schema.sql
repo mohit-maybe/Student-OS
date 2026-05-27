@@ -17,6 +17,18 @@ CREATE TABLE IF NOT EXISTS users (
     FOREIGN KEY (school_id) REFERENCES schools (id)
 );
 
+CREATE TABLE IF NOT EXISTS classrooms (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    section TEXT,
+    teacher_id INTEGER,
+    academic_year TEXT DEFAULT '2025-2026',
+    school_id INTEGER DEFAULT 1,
+    UNIQUE(name, school_id),
+    FOREIGN KEY (teacher_id) REFERENCES users (id),
+    FOREIGN KEY (school_id) REFERENCES schools (id)
+);
+
 CREATE TABLE IF NOT EXISTS courses (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
@@ -150,18 +162,6 @@ CREATE TABLE IF NOT EXISTS student_details (
     FOREIGN KEY (school_id) REFERENCES schools (id)
 );
 
-CREATE TABLE IF NOT EXISTS classrooms (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    section TEXT,
-    teacher_id INTEGER,
-    academic_year TEXT DEFAULT '2025-2026',
-    school_id INTEGER DEFAULT 1,
-    UNIQUE(name, school_id),
-    FOREIGN KEY (teacher_id) REFERENCES users (id),
-    FOREIGN KEY (school_id) REFERENCES schools (id)
-);
-
 -- AI Exam Predictor Tables
 CREATE TABLE IF NOT EXISTS exam_assets (
     id SERIAL PRIMARY KEY,
@@ -196,8 +196,10 @@ CREATE TABLE IF NOT EXISTS predicted_questions (
     topic_id INTEGER NOT NULL,
     question_text TEXT NOT NULL,
     question_type TEXT, -- 'Theory', 'Numerical', 'Derivation'
+    school_id INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (topic_id) REFERENCES predicted_topics (id) ON DELETE CASCADE
+    FOREIGN KEY (topic_id) REFERENCES predicted_topics (id) ON DELETE CASCADE,
+    FOREIGN KEY (school_id) REFERENCES schools (id)
 );
 
 CREATE TABLE IF NOT EXISTS revision_plans (

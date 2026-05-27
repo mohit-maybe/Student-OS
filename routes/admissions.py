@@ -183,11 +183,11 @@ def edit_student(user_id):
         with db_cursor(db) as cursor:
             cursor.execute('''
                 UPDATE student_details SET 
-                full_name = %%s, email = %%s, mobile = %%s, dob = %%s, 
-                gender = %%s, address = %%s, parent_name = %%s, 
-                parent_mobile = %%s, parent_email = %%s, classroom_id = %%s
-                WHERE user_id = %%s AND school_id = %%s
-            '''.replace('%%', '%'), (
+                full_name = %s, email = %s, mobile = %s, dob = %s, 
+                gender = %s, address = %s, parent_name = %s, 
+                parent_mobile = %s, parent_email = %s, classroom_id = %s
+                WHERE user_id = %s AND school_id = %s
+            ''', (
                 data.get('full_name'), data.get('email'), data.get('mobile'), 
                 data.get('dob'), data.get('gender'), data.get('address'),
                 data.get('parent_name'), data.get('parent_mobile'), 
