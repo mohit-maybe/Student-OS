@@ -6,7 +6,7 @@ services:
     startCommand: gunicorn app:app
     envVars:
       - key: DATABASE_URL
-        value: sqlite:///student_os.db
+        value: ""
       - key: SECRET_KEY
         generateValue: true
       - key: SEED_DEMO
