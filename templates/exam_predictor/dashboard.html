@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+        <div class="header">
+            <div>
+                <span class="header-pretitle">AI Analysis Center</span>
+                <h1 class="header-title">AI Exam Predictor</h1>
+                <p style="color: var(--text-muted); margin-top: 0.75rem; font-weight: 500;">
+                    Upload your past papers and syllabus to generate data-driven exam insights.
+                </p>
+            </div>
+            <div class="user-pill staggered-entry">
+                <div class="avatar-sm">
+                    <i data-lucide="brain-circuit" width="18"></i>
+                </div>
+                <span style="font-weight: 700; color: var(--primary-color);">AI Active</span>
+            </div>
+        </div>
+
+        <!-- Progress/Stats Section -->
+        <div class="stats-grid stagger-container">
+            <div class="stat-card">
+                <div class="stat-header"><i data-lucide="file-text" width="16"></i> Analyzed Files</div>
+                <div class="stat-value">{{ assets|length }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header"><i data-lucide="target" width="16"></i> High Prob Topics</div>
+                <div class="stat-value">{{ topics|selectattr('importance_level', 'equalto', 'High')|list|length }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header"><i data-lucide="help-circle" width="16"></i> Predicted Qs</div>
+                <div class="stat-value">{{ questions|length }}</div>
+            </div>
+        </div>
+
+        <div class="stats-grid stagger-container" style="grid-template-columns: 1fr 2fr; margin-top: 1.5rem;">
+            <!-- Upload Panel -->
+            <div class="stat-card">
+                <h3>Upload Exam Docs</h3>
+                <form action="{{ url_for('exam_predictor.upload_file') }}" method="POST" enctype="multipart/form-data" style="margin-top: 1.5rem;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600;">Document Type</label>
+                        <select name="asset_type" style="width: 100%; padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main);">
+                            <option value="Past Paper">Past Year Paper</option>
+                            <option value="Syllabus">Official Syllabus</option>
+                            <option value="Notes">Class Notes</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600;">Exam Year</label>
+                        <input type="number" name="exam_year" placeholder="e.g. 2024" style="width: 100%; padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main);">
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600;">Select PDF File</label>
+                        <input type="file" name="file" accept=".pdf" required style="width: 100%; padding: 1.5rem; border: 2px dashed var(--border-color); border-radius: var(--radius-md); text-align: center;">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-weight: 700;">
+                        <i data-lucide="upload-cloud" width="18" style="margin-right: 0.5rem;"></i> Start AI Analysis
+                    </button>
+                </form>
+
+                <div style="margin-top: 2rem;">
+                    <h4>Recent Documents</h4>
+                    <ul style="list-style: none; padding: 0; margin-top: 1rem;">
+                        {% for asset in assets[:5] %}
+                        <li style="display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); font-size: 0.85rem;">
+                            <span><i data-lucide="file" width="14"></i> {{ asset.file_path.split('\\')[-1] }}</span>
+                            <span style="color: var(--text-muted);">{{ asset.exam_year or '' }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Analysis Dashboard -->
+            <div class="stat-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Topic Probability Intelligence</h3>
+                    <div style="font-size: 0.75rem; background: var(--primary-light); color: var(--primary-color); padding: 0.25rem 0.75rem; border-radius: 1rem; font-weight: 700;">
+                        10-Year Weighted Analysis
+                    </div>
+                </div>
+                
+                {% if not topics %}
+                <div style="text-align: center; padding: 5rem; color: var(--text-muted);">
+                    <i data-lucide="bar-chart-3" width="64" style="opacity: 0.2; margin-bottom: 1rem;"></i>
+                    <p>No data analyzed yet. Upload PDFs to see predictions.</p>
+                </div>
+                {% else %}
+                <div style="height: 350px; margin-top: 2rem;">
+                    <canvas id="probabilityChart"></canvas>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <h3>Top Predicted Chapters</h3>
+                    <div class="table-container" style="margin-top: 1rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Topic / Chapter</th>
+                                    <th>Probability</th>
+                                    <th>Importance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for topic in topics[:10] %}
+                                <tr>
+                                    <td><span style="font-weight: 600;">{{ topic.topic_name }}</span></td>
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 1rem;">
+                                            <div style="flex: 1; height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden;">
+                                                <div style="width: {{ topic.probability }}%; height: 100%; background: linear-gradient(90deg, var(--primary-color), var(--accent-color));"></div>
+                                            </div>
+                                            <span style="font-weight: 700; width: 45px;">{{ topic.probability }}%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if topic.importance_level == 'High' %}badge-error{% elif topic.importance_level == 'Medium' %}badge-warning{% else %}badge-info{% endif %}">
+                                            {{ topic.importance_level }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="stats-grid stagger-container" style="margin-top: 1.5rem;">
+            <!-- Predicted Questions -->
+            <div class="stat-card">
+                <h3>Predicted Board Questions</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">AI-generated likely questions based on historical repetition.</p>
+                
+                {% if not questions %}
+                <p style="text-align: center; padding: 2rem; color: var(--text-muted);">No questions generated.</p>
+                {% else %}
+                <div class="notification-list">
+                    {% for q in questions %}
+                    <div class="notification-item" style="border-left: 4px solid var(--primary-color);">
+                        <div class="n-icon info"><i data-lucide="zap" width="16"></i></div>
+                        <div style="flex: 1;">
+                            <p class="n-message" style="font-weight: 600; color: var(--text-main);">{{ q.question_text }}</p>
+                            <span class="n-time">{{ q.topic_name }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Revision Planner -->
+            <div class="stat-card">
+                <h3>Smart Revision Roadmap</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Optimized schedule based on topic importance.</p>
+                
+                {% if not revision_plan %}
+                <p style="text-align: center; padding: 2rem; color: var(--text-muted);">Upload docs to generate a plan.</p>
+                {% else %}
+                <div class="timeline" style="margin-top: 1rem; position: relative; padding-left: 2rem;">
+                    <div style="position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border-color);"></div>
+                    {% for item in revision_plan %}
+                    <div style="position: relative; margin-bottom: 1.5rem;">
+                        <div style="position: absolute; left: -28px; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--primary-color); border: 3px solid var(--bg-card);"></div>
+                        <div style="background: var(--bg-body); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 800; font-size: 0.9rem; color: var(--primary-color);">Day {{ loop.index }}</span>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">{{ item.scheduled_date }}</span>
+                            </div>
+                            <p style="font-weight: 600; margin-top: 0.25rem;">{{ item.topic_name }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    {% if topics %}
+    const topicsData = {
+        labels: [{% for t in topics[:10] %}"{{ t.topic_name }}"{% if not loop.last %},{% endif %}{% endfor %}],
+        values: [{% for t in topics[:10] %}{{ t.probability }}{% if not loop.last %},{% endif %}{% endfor %}]
+    };
+
+    const ctx = document.getElementById('probabilityChart').getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(99, 102, 241, 0.8)');
+    gradient.addColorStop(1, 'rgba(168, 85, 247, 0.4)');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: topicsData.labels,
+            datasets: [{
+                label: 'Appearance Probability (%)',
+                data: topicsData.values,
+                backgroundColor: gradient,
+                borderRadius: 8,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: '#888' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#888', font: { size: 10 } }
+                }
+            }
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}

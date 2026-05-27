@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+        <div class="header" style="align-items: flex-end; margin-bottom: 3rem;">
+            <div>
+                <p style="color: var(--text-muted); font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">
+                    Communication Hub</p>
+                <h1 style="font-size: 2.25rem; font-weight: 800; letter-spacing: -0.025em;">Messages</h1>
+            </div>
+            <div>
+                <a href="{{ url_for('messages.new_conversation') }}" class="btn-primary"
+                    style="width: auto; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem;">
+                    <i data-lucide="plus" width="18"></i> New Conversation
+                </a>
+            </div>
+        </div>
+
+        <div class="stat-card" style="padding: 0; overflow: hidden;">
+            {% if not conversations %}
+            <div
+                style="text-align: center; padding: 6rem 2rem; display: flex; flex-direction: column; align-items: center;">
+                <div style="
+                    width: 80px; 
+                    height: 80px; 
+                    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); 
+                    border-radius: 50%; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    margin-bottom: 2rem;
+                    box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);">
+                    <i data-lucide="message-circle" style="color: var(--primary-color); width: 40px; height: 40px;"></i>
+                </div>
+                <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem;">No Conversations Yet</h3>
+                <p style="color: var(--text-muted); max-width: 300px; margin-bottom: 2rem; line-height: 1.6;">
+                    Connect with your teachers and classmates. Start a new conversation to get things rolling.
+                </p>
+                <a href="{{ url_for('messages.new_conversation') }}" class="btn-primary"
+                    style="text-decoration: none; padding: 0.75rem 2rem;">
+                    Start a Chat
+                </a>
+            </div>
+            {% else %}
+            <div class="message-list">
+                <!-- Global Group Chat Pinned -->
+                <a href="{{ url_for('messages.chat', other_user_id=0) }}" class="message-row"
+                    style="background: rgba(99, 102, 241, 0.05); border-left: 4px solid var(--primary-color);">
+                    <div class="msg-avatar">
+                        <div class="avatar-sm"
+                            style="background: linear-gradient(135deg, var(--primary-color), #a855f7); color: white; border: none;">
+                            <i data-lucide="users" width="20"></i>
+                        </div>
+                    </div>
+                    <div class="msg-info">
+                        <div class="msg-header">
+                            <span class="msg-username">Global Group Chat</span>
+                            <span class="msg-date">Always Active</span>
+                        </div>
+                        <div class="msg-preview" style="color: var(--primary-color); font-weight: 500;">
+                            Chat with everyone in the university...
+                        </div>
+                    </div>
+                </a>
+
+                {% for chat in conversations %}
+                <a href="{{ url_for('messages.chat', other_user_id=chat.other_user_id) }}"
+                    class="message-row {{ 'unread' if chat.is_read == 0 and chat.sender_id != user.id else '' }}">
+                    <div class="msg-avatar">
+                        <div class="avatar-sm"
+                            style="background: var(--bg-color); border: 1px solid var(--border-color);">
+                            {{ chat.other_username[0]|upper }}
+                        </div>
+                    </div>
+                    <div class="msg-info">
+                        <div class="msg-header">
+                            <span class="msg-username">{{ chat.other_username }}</span>
+                            <span class="msg-date">{{ chat.created_at | pretty_date }}</span>
+                        </div>
+                        <div class="msg-preview">
+                            {% if chat.sender_id == user.id %}
+                            <span style="color: var(--text-muted);">You: </span>
+                            {% endif %}
+                            {{ chat.last_message[:60] }}{{ '...' if chat.last_message|length > 60 else '' }}
+                        </div>
+                    </div>
+                    {% if chat.is_read == 0 and chat.sender_id != user.id %}
+                    <div class="unread-dot"></div>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+<style>
+    .message-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .message-row {
+        display: flex;
+        padding: 1.5rem 2rem;
+        gap: 1.25rem;
+        text-decoration: none;
+        color: inherit;
+        border-bottom: 1px solid var(--border-color);
+        transition: all 0.2s ease;
+        align-items: center;
+        position: relative;
+    }
+
+    .message-row:last-child {
+        border-bottom: none;
+    }
+
+    .message-row:hover {
+        background: var(--bg-color);
+    }
+
+    .message-row.unread {
+        background: rgba(99, 102, 241, 0.03);
+    }
+
+    .message-row.unread .msg-username {
+        font-weight: 700;
+    }
+
+    .msg-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .msg-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.25rem;
+    }
+
+    .msg-username {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .msg-date {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .msg-preview {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .unread-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        margin-left: 1rem;
+    }
+</style>
+{% endblock %}

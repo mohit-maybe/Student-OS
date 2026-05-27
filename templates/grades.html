@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+        <div class="header" style="margin-bottom: 2rem;">
+            <div>
+                <p class="header-pretitle">Academic Records</p>
+                <h1 class="header-title">Grades & Performance</h1>
+            </div>
+            {% if user.role == 'teacher' %}
+            <div class="header-actions">
+                <a href="{{ url_for('academic.download_batch_reports') }}" class="btn-primary"
+                    style="width: auto; padding: 0.6rem 1.25rem;">
+                    <i data-lucide="download" width="16"></i> <span>Export All Reports</span>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if user.role == 'teacher' %}
+        <div class="stat-card" style="margin-bottom: 2rem; padding: 1.5rem;">
+            <h3 style="margin-bottom: 1rem; font-weight: 600;">Add New Grade</h3>
+            <form method="POST"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; align-items: end;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label">Student</label>
+                    <select name="student_id" class="form-input" required>
+                        {% for student in students %}
+                        <option value="{{ student.id }}">{{ student.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label">Course</label>
+                    <select name="course_id" class="form-input" required>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}">{{ course.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label">Category</label>
+                    <select name="grade_type" class="form-input" required>
+                        <option value="Homework">Homework</option>
+                        <option value="Exam">Exam</option>
+                        <option value="Quiz">Quiz</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label">Score %</label>
+                    <input type="number" name="score" step="0.1" max="100" class="form-input" required>
+                </div>
+                <button type="submit" class="btn-primary">Save</button>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        {% if user.role == 'teacher' %}
+                        <th>Student</th>
+                        {% endif %}
+                        <th>Category</th>
+                        <th>Score</th>
+                        <th style="text-align: right;">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grade in grades %}
+                    <tr>
+                        <td>{{ grade.course_name }}</td>
+                        {% if user.role == 'teacher' %}
+                        <td>{{ grade.student_name }}</td>
+                        {% endif %}
+                        <td><span class="badge badge-indigo">{{ grade.grade_type }}</span></td>
+                        <td>
+                            <div style="font-weight: 700;">{{ grade.score }}%</div>
+                        </td>
+                        <td style="text-align: right; color: var(--text-muted);">{{ grade.date_recorded | pretty_date }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="padding: 3rem; text-align: center; color: var(--text-muted);">
+                            <p>No academic records found.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if user.role == 'teacher' %}
+        <div class="header" style="margin-top: 3rem; margin-bottom: 1rem;">
+            <h3 style="font-weight: 600;">Student Evaluations</h3>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ student.username }}</td>
+                        <td style="text-align: right;">
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                <button class="btn-primary"
+                                    style="width: auto; padding: 0.5rem 1rem; font-size: 0.8rem; background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color);"
+                                    onclick="openRemarksModal('{{ student.id }}', '{{ student.username }}')">
+                                    Remarks
+                                </button>
+                                <a href="{{ url_for('academic.download_student_report', student_id=student.id) }}"
+                                    class="btn-primary"
+                                    style="width: auto; padding: 0.5rem 1rem; font-size: 0.8rem; text-decoration: none;">
+                                    PDF Report
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Remarks Modal -->
+        <div id="remarksModal" class="modal">
+            <div class="stat-card" style="width: 500px; max-width: 90%; background: var(--card-bg); padding: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3>Evaluation: <span id="modalStudName"></span></h3>
+                    <button onclick="closeRemarksModal()"
+                        style="background: none; border: none; cursor: pointer; color: var(--text-muted);"><i
+                            data-lucide="x"></i></button>
+                </div>
+                <form action="{{ url_for('academic.save_remarks') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="student_id" id="modalStudId">
+                    <div class="form-group">
+                        <label>Academic Remarks</label>
+                        <textarea name="remarks" class="form-input" style="height: 100px;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Future Goals</label>
+                        <textarea name="improvement_areas" class="form-input" style="height: 80px;"></textarea>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+                        <button type="button" onclick="closeRemarksModal()" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary" style="width: auto;">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            function openRemarksModal(id, name) {
+                document.getElementById('modalStudId').value = id;
+                document.getElementById('modalStudName').textContent = name;
+                document.getElementById('remarksModal').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+            function closeRemarksModal() {
+                document.getElementById('remarksModal').style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        </script>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

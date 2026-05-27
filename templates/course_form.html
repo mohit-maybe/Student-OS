@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+        <div class="header" style="align-items: flex-end; margin-bottom: 3rem;">
+            <div>
+                <a href="{{ url_for('courses.courses') }}" class="back-link">
+                    <i data-lucide="arrow-left" width="14"></i> Back to Catalog
+                </a>
+                <h1 style="font-size: 2.25rem; font-weight: 800; letter-spacing: -0.025em; margin-top: 0.5rem;">
+                    {{ 'Modify Course' if course else 'Create Course' }}
+                </h1>
+            </div>
+        </div>
+
+        <div class="stat-card" style="max-width: 600px; padding: 3rem;">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group" style="margin-bottom: 2rem;">
+                    <label for="name" class="form-label"
+                        style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Course
+                        Title</label>
+                    <input type="text" id="name" name="name" class="form-input"
+                        value="{{ course.name if course else '' }}" required placeholder="e.g. Advanced Data Structures"
+                        style="font-size: 1.1rem; padding: 1rem;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 2.5rem;">
+                    <label for="schedule" class="form-label"
+                        style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Class
+                        Schedule</label>
+                    <input type="text" id="schedule" name="schedule" class="form-input"
+                        value="{{ course.schedule if course else '' }}" placeholder="e.g. Tuesday / Thursday • 2:00 PM"
+                        style="font-size: 1.1rem; padding: 1rem;">
+                </div>
+
+                <div
+                    style="display: flex; gap: 1.25rem; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+                    <button type="submit" class="btn-primary"
+                        style="padding: 1rem 1.5rem; font-size: 1rem; border-radius: 0.75rem; width: auto;">
+                        {{ 'Update Course Repository' if course else 'Provision Course' }}
+                    </button>
+                    <a href="{{ url_for('courses.courses') }}" class="back-link" style="padding: 0 1rem;">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}

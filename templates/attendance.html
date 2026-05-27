@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+        <div class="header">
+            <div>
+                <span class="header-pretitle">Operational Records</span>
+                <h1 class="header-title">Attendance</h1>
+            </div>
+        </div>
+
+        {% if user.role == 'teacher' %}
+        <div class="stat-card" style="margin-bottom: 2.5rem;">
+            <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; font-size: 1.25rem;">
+                <i data-lucide="check-square" class="text-primary" style="color: var(--primary-color);"></i>
+                Mark Daily Attendance
+            </h3>
+            <form method="POST"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; align-items: end;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="form-group-premium" style="margin: 0;">
+                    <label class="form-label-premium">
+                        <i data-lucide="user"></i> Student
+                    </label>
+                    <div class="input-wrapper-premium">
+                        <select name="student_id" class="form-input-premium" required>
+                            {% for student in students %}
+                            <option value="{{ student.id }}">{{ student.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group-premium" style="margin: 0;">
+                    <label class="form-label-premium">
+                        <i data-lucide="book-open"></i> Course
+                    </label>
+                    <div class="input-wrapper-premium">
+                        <select name="course_id" class="form-input-premium" required>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}">{{ course.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group-premium" style="margin: 0;">
+                    <label class="form-label-premium">
+                        <i data-lucide="calendar"></i> Session Date
+                    </label>
+                    <div class="input-wrapper-premium">
+                        <input type="date" name="date" class="form-input-premium" required>
+                    </div>
+                </div>
+
+                <div class="form-group-premium" style="margin: 0;">
+                    <label class="form-label-premium">
+                        <i data-lucide="activity"></i> Status
+                    </label>
+                    <div class="input-wrapper-premium">
+                        <select name="status" class="form-input-premium" required>
+                            <option value="Present">Present</option>
+                            <option value="Absent">Absent</option>
+                            <option value="Late">Late</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" style="height: 50px; width: 100%; border-radius: 0.75rem;">
+                    Update Log
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="stat-card"
+            style="padding: 0; overflow: hidden; border: none; background: transparent; box-shadow: none;">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Course</th>
+                            {% if user.role == 'teacher' %}
+                            <th>Student</th>
+                            {% endif %}
+                            <th style="text-align: right;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in attendance %}
+                        <tr class="staggered-entry" style="transition: background 0.2s;">
+                            <td class="text-muted" style="font-weight: 600;">{{ record.date | pretty_date }}</td>
+                            <td>
+                                <div style="font-weight: 700; color: var(--text-main);">{{ record.course_name }}</div>
+                            </td>
+                            {% if user.role == 'teacher' %}
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <div class="avatar-sm" style="width: 28px; height: 28px; font-size: 0.75rem;">
+                                        {{ record.student_name[0] | upper }}
+                                    </div>
+                                    <span>{{ record.student_name }}</span>
+                                </div>
+                            </td>
+                            {% endif %}
+                            <td style="text-align: right;">
+                                {% if record.status == 'Present' %}
+                                <span class="badge badge-success">Present</span>
+                                {% elif record.status == 'Absent' %}
+                                <span class="badge badge-error">Absent</span>
+                                {% else %}
+                                <span class="badge badge-warning">Late</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" style="padding: 4rem 2rem; text-align: center; color: var(--text-muted);">
+                                <i data-lucide="calendar-off" width="48" height="48"
+                                    style="margin-bottom: 1rem; opacity: 0.2; color: var(--text-muted);"></i>
+                                <p>No attendance logs found.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
