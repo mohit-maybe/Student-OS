@@ -168,8 +168,19 @@ def pretty_date_filter(date_str):
 
 @app.route('/')
 def index():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard.dashboard'))
+    # Force logout check - if user exists but database connection failed, clear session
+    try:
+        if current_user.is_authenticated:
+            # Verify user actually exists in database
+            user = User.get(current_user.id)
+            if not user:
+                logout_user()
+                return render_template('landing.html')
+            return redirect(url_for('dashboard.dashboard'))
+    except Exception as e:
+        # If database fails, clear session and show landing page
+        if current_user.is_authenticated:
+            logout_user()
     return render_template('landing.html')
 
 @app.errorhandler(404)
