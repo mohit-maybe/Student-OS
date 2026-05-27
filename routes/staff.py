@@ -109,9 +109,9 @@ def add_teacher():
         db.commit()
 
         # 3. Send Email with Login Credentials
-        mail_configured = current_app.config.get('MAIL_USERNAME') and current_app.config.get('MAIL_PASSWORD')
-        if mail_configured:
-            try:
+        try:
+            mail_configured = current_app.config.get('MAIL_USERNAME') and current_app.config.get('MAIL_PASSWORD')
+            if mail_configured:
                 msg = Message(
                     f'Welcome to {current_app.config.get("UNIVERSITY_NAME", "Student OS")} - Your Faculty Login Credentials',
                     recipients=[email]
@@ -165,14 +165,14 @@ def add_teacher():
                 mail.send(msg)
                 print(f"[EMAIL] Credentials sent successfully to {email} for {full_name}")
                 flash(f'Staff member {full_name} added successfully! Login credentials sent to {email}.', 'success')
-            except Exception as mail_err:
-                print(f"[EMAIL ERROR] Failed to send email to {email}: {str(mail_err)}")
-                import traceback
-                traceback.print_exc()
-                flash(f'Staff added, but email notification failed. Credentials: Username: {username}, Password: {password}', 'warning')
-        else:
-            print(f"[EMAIL] Mail not configured. Displaying credentials for {full_name}")
-            flash(f'Staff {full_name} added successfully! Username: {username}, Password: {password}', 'success')
+            else:
+                print(f"[EMAIL] Mail not configured. Displaying credentials for {full_name}")
+                flash(f'Staff {full_name} added successfully! Username: {username}, Password: {password}', 'success')
+        except Exception as mail_err:
+            print(f"[EMAIL ERROR] Failed to send email to {email}: {str(mail_err)}")
+            import traceback
+            traceback.print_exc()
+            flash(f'Staff added, but email notification failed. Credentials: Username: {username}, Password: {password}', 'warning')
 
     except Exception as e:
         db.rollback()
@@ -262,9 +262,9 @@ def import_teachers():
                     )
                     
                     # 3. Send Credentials Email
-                    mail_configured = current_app.config.get('MAIL_USERNAME') and current_app.config.get('MAIL_PASSWORD')
-                    if mail_configured:
-                        try:
+                    try:
+                        mail_configured = current_app.config.get('MAIL_USERNAME') and current_app.config.get('MAIL_PASSWORD')
+                        if mail_configured:
                             msg = Message(
                                 f'Welcome to {current_app.config.get("UNIVERSITY_NAME", "Student OS")} - Your Faculty Login Credentials',
                                 recipients=[email]
@@ -317,11 +317,11 @@ def import_teachers():
                             """
                             mail.send(msg)
                             print(f"[EMAIL] Credentials sent successfully to {email} for {full_name}")
-                        except Exception as mail_err:
-                            print(f"[EMAIL ERROR] Failed to send email to {email}: {str(mail_err)}")
-                            import traceback
-                            traceback.print_exc()
-                            errors.append(f"Email failed for {email}: {str(mail_err)}")
+                        else:
+                            print(f"[EMAIL] Mail not configured for {email}")
+                    except Exception as mail_err:
+                        print(f"[EMAIL ERROR] Failed to send email to {email}: {str(mail_err)}")
+                        errors.append(f"Email failed for {email}: {str(mail_err)}")
                     
                     count += 1
                 except Exception as e:
