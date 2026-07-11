@@ -150,6 +150,30 @@ def init_db(app):
 
         # Migration system
         print("[MIGRATE] Checking for required migrations...")
+
+        # Universal: account email linking + verification table (any role, incl. admin)
+        with db_cursor(db) as cursor:
+            if is_sqlite:
+                cursor.execute('''CREATE TABLE IF NOT EXISTS user_emails (
+                    user_id INTEGER PRIMARY KEY,
+                    email TEXT NOT NULL,
+                    is_verified INTEGER DEFAULT 0,
+                    verification_token TEXT,
+                    token_created_at TIMESTAMP,
+                    verified_at TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                )''')
+            else:
+                cursor.execute('''CREATE TABLE IF NOT EXISTS user_emails (
+                    user_id INTEGER PRIMARY KEY REFERENCES users(id),
+                    email TEXT NOT NULL,
+                    is_verified BOOLEAN DEFAULT FALSE,
+                    verification_token TEXT,
+                    token_created_at TIMESTAMP,
+                    verified_at TIMESTAMP
+                )''')
+        db.commit()
+
         with db_cursor(db) as cursor:
             if is_sqlite:
                 cursor.execute("PRAGMA table_info(student_details)")

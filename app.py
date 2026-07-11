@@ -180,6 +180,10 @@ def index():
         return redirect(url_for('dashboard.dashboard'))
     return render_template('landing.html')
 
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
@@ -342,3 +346,4 @@ def startup_init():
 # Perform one-time initialization before starting the app (Locally)
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
