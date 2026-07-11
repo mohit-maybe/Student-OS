@@ -66,6 +66,5 @@ def tally_webhook():
 
     except Exception as e:
         import traceback
-        tb = traceback.format_exc()
-        print(f"[Webhook] EXCEPTION: {tb}")
-        return jsonify({'error': str(e), 'traceback': tb}), 500
+        traceback.print_exc()
+        return jsonify({'error': 'Internal error processing webhook'}), 500
