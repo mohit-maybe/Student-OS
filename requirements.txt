@@ -28,3 +28,4 @@ colorama
 pytz
 qrcode[pil]
 openpyxl
+sib-api-v3-sdk
