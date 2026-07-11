@@ -185,7 +185,9 @@ def keep_alive():
 @app.errorhandler(500)
 def internal_server_error(e):
     import traceback
-    return f"<h1>500 Internal Server Error</h1><pre>{traceback.format_exc()}</pre>", 500
+    # Log the full traceback server-side for debugging, but never expose it to visitors.
+    traceback.print_exc()
+    return render_template('500.html'), 500
 
 def seed_demo_data(db):
     """Populates the database with sample data if it's empty."""
@@ -286,8 +288,20 @@ def startup_init():
                 # 1. Create default admin if not exists
                 cursor.execute('SELECT id FROM users WHERE username = %s', ('admin',))
                 if not cursor.fetchone():
+                    import secrets
+                    admin_username = os.getenv('ADMIN_USERNAME', 'admin')
+                    admin_password = os.getenv('ADMIN_PASSWORD')
+                    if not admin_password:
+                        # No password configured: generate a strong random one rather than
+                        # shipping a guessable default like 'admin123' on a public deployment.
+                        admin_password = secrets.token_urlsafe(12)
+                        print("=" * 60)
+                        print(f"[SECURITY] No ADMIN_PASSWORD env var set.")
+                        print(f"[SECURITY] Generated admin login -> username: {admin_username} | password: {admin_password}")
+                        print(f"[SECURITY] Set ADMIN_PASSWORD in your environment to control this.")
+                        print("=" * 60)
                     cursor.execute('INSERT INTO users (username, password_hash, role, school_id) VALUES (%s, %s, %s, %s)',
-                               ('admin', generate_password_hash('admin123'), 'admin', 1))
+                               (admin_username, generate_password_hash(admin_password), 'admin', 1))
                     db.commit()
 
                 # 2. Create Group Chat system user (ID 0)
@@ -321,4 +335,3 @@ def startup_init():
 # Perform one-time initialization before starting the app (Locally)
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
