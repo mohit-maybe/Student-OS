@@ -4,7 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student OS</title>
+    <title>{% block page_title %}Student OS — School Management Portal{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Attendance, grading, and messaging for students, teachers, and admins — one dashboard for a school's entire day.{% endblock %}">
+
+    <!-- Open Graph / LinkedIn / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{% block og_title %}Student OS — School Management Portal{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Attendance, grading, and messaging for students, teachers, and admins — one dashboard for a school's entire day. Try the live demo.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/student_os_email_banner.png', _external=True) }}{% endblock %}">
+    <meta property="og:url" content="{{ request.url }}">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}Student OS — School Management Portal{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Attendance, grading, and messaging for students, teachers, and admins — one dashboard for a school's entire day.{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='images/student_os_email_banner.png', _external=True) }}{% endblock %}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">

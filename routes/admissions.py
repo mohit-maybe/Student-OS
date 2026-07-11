@@ -45,7 +45,7 @@ def student_qr(student_id):
         return redirect(url_for('admissions.enroll'))
 
     # Only the student themselves, or staff, can view the QR
-    if current_user.role not in ['admin', 'teacher'] and current_user.id != student['user_id']:
+    if current_user.role not in ['admin', 'teacher'] and current_user.id != student_id:
         flash('Unauthorized.', 'error')
         return redirect(url_for('dashboard.dashboard'))
 
@@ -183,11 +183,11 @@ def edit_student(user_id):
         with db_cursor(db) as cursor:
             cursor.execute('''
                 UPDATE student_details SET 
-                full_name = %s, email = %s, mobile = %s, dob = %s, 
-                gender = %s, address = %s, parent_name = %s, 
-                parent_mobile = %s, parent_email = %s, classroom_id = %s
-                WHERE user_id = %s AND school_id = %s
-            ''', (
+                full_name = %%s, email = %%s, mobile = %%s, dob = %%s, 
+                gender = %%s, address = %%s, parent_name = %%s, 
+                parent_mobile = %%s, parent_email = %%s, classroom_id = %%s
+                WHERE user_id = %%s AND school_id = %%s
+            '''.replace('%%', '%'), (
                 data.get('full_name'), data.get('email'), data.get('mobile'), 
                 data.get('dob'), data.get('gender'), data.get('address'),
                 data.get('parent_name'), data.get('parent_mobile'), 

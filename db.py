@@ -15,9 +15,7 @@ def get_db():
                 if db_url.startswith('postgres://'):
                     db_url = db_url.replace('postgres://', 'postgresql://', 1)
                 return psycopg2.connect(db_url, cursor_factory=DictCursor)
-            except Exception as e:
-                print(f"[WARN] Postgres connection failed in fallback: {e}")
-                pass
+            except: pass
         db_path = os.getenv('DATABASE', 'student_os.db')
         db = sqlite3.connect(db_path)
         db.row_factory = sqlite3.Row

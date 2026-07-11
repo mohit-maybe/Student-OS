@@ -6,7 +6,9 @@ services:
     startCommand: gunicorn app:app
     envVars:
       - key: DATABASE_URL
-        value: ""
+        fromDatabase:
+          name: student-os-db
+          property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: SEED_DEMO
@@ -17,3 +19,9 @@ services:
         sync: false
       - key: MAIL_PASSWORD
         sync: false
+
+databases:
+  - name: student-os-db
+    plan: free
+    databaseName: student_os
+    user: admin

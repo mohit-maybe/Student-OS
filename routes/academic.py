@@ -17,13 +17,7 @@ def grades():
     from db import db_cursor
     with db_cursor(db) as cursor:
         if request.method == 'POST' and current_user.role == 'teacher':
-            try:
-                score_raw = request.form.get('score', '0')
-                score = float(score_raw) if score_raw else 0.0
-            except ValueError:
-                flash('Invalid score format. Please enter a number.', 'error')
-                return redirect(url_for('academic.grades'))
-
+            score = float(request.form.get('score', 0))
             if not (0 <= score <= 100):
                 flash('Score must be between 0 and 100.', 'error')
                 return redirect(url_for('academic.grades'))
@@ -138,16 +132,10 @@ def grade_submission(assignment_id, submission_id):
     db = get_db()
     from db import db_cursor
     with db_cursor(db) as cursor:
-        cursor.execute('SELECT * FROM submissions WHERE id = %s AND school_id = %s', (submission_id, current_user.school_id))
+        cursor.execute('SELECT * FROM submissions WHERE id = %s', (submission_id,))
         sub = cursor.fetchone()
-        if not sub:
-            flash('Submission not found.', 'error')
-            return redirect(url_for('academic.view_submissions', assignment_id=assignment_id))
-        cursor.execute('SELECT * FROM assignments WHERE id = %s AND school_id = %s', (assignment_id, current_user.school_id))
+        cursor.execute('SELECT * FROM assignments WHERE id = %s', (assignment_id,))
         assign = cursor.fetchone()
-        if not assign:
-            flash('Assignment not found.', 'error')
-            return redirect(url_for('academic.view_submissions', assignment_id=assignment_id))
         
         grade = float(request.form.get('grade', 0))
         if not (0 <= grade <= 100):

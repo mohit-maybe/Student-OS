@@ -335,7 +335,6 @@ def export_excel(classroom_id):
         return redir
 
     db = get_db()
-    from db import db_cursor
     with db_cursor(db) as cursor:
         # 1. Fetch classroom info
         cursor.execute("SELECT name, section, academic_year FROM classrooms WHERE id = %s AND school_id = %s", (classroom_id, current_user.school_id))

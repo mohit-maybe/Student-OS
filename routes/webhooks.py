@@ -61,33 +61,10 @@ def tally_webhook():
             print("[Webhook] Processed Tally form but no email address was found in the submission.")
             return jsonify({'message': 'Processed, but no email found'}), 200
             
-        # Send notification email with the structured data
-        try:
-            msg = Message(
-                subject=f"New Form Submission: {school_name}",
-                recipients=[email],
-                html=f"""
-                <div style='font-family: sans-serif; color: #333;'>
-                    <h2>New Student OS Registration Inquiry</h2>
-                    <p>Hello {contact_name},</p>
-                    <p>We received a new form submission for <b>{school_name}</b>. Here are the details:</p>
-                    {structured_data_html}
-                    <p style='margin-top: 20px; font-size: 0.9em; color: #666;'>
-                        This is an automated message from your Student OS instance.
-                    </p>
-                </div>
-                """
-            )
-            mail.send(msg)
-            print(f"[Webhook] Email sent to {email} for {school_name}")
-        except Exception as mail_err:
-            print(f"[Webhook] Failed to send email: {mail_err}")
-
         print(f"[Webhook] Successfully logged submission for {school_name} from {email}.")
         return jsonify({'message': 'Webhook received and logged successfully'}), 200
 
     except Exception as e:
         import traceback
-        tb = traceback.format_exc()
-        print(f"[Webhook] EXCEPTION: {tb}")
-        return jsonify({'error': str(e), 'traceback': tb}), 500
+        traceback.print_exc()
+        return jsonify({'error': 'Internal error processing webhook'}), 500

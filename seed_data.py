@@ -31,6 +31,7 @@ def seed():
         cursor.execute('DELETE FROM grades')
         cursor.execute('DELETE FROM attendance')
         cursor.execute('DELETE FROM enrollments')
+        cursor.execute('DELETE FROM markings' if False else 'SELECT 1') # Placeholder cleanup
         cursor.execute('DELETE FROM assignments')
         cursor.execute('DELETE FROM submissions')
         cursor.execute('DELETE FROM notifications')

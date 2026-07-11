@@ -28,7 +28,7 @@ def add_notification(db, user_id, message, n_type='info', school_id=1):
     with db_cursor(db) as cursor:
         cursor.execute('INSERT INTO notifications (user_id, message, type, school_id) VALUES (%s, %s, %s, %s)',
                    (user_id, message, n_type, school_id))
-    # Note: Caller is responsible for committing the transaction
+    db.commit()
     
 def generate_credentials(full_name, role='student'):
     import secrets

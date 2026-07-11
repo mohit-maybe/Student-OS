@@ -2,6 +2,11 @@
 
 {% block body_class %}landing-body{% endblock %}
 
+{% block page_title %}Student OS — Try the Live School Management Demo{% endblock %}
+{% block meta_description %}A school management portal I built solo: attendance, grading, and messaging for students, teachers, and admins. Log in and explore the live demo.{% endblock %}
+{% block og_title %}Student OS — Try the Live School Management Demo{% endblock %}
+{% block og_description %}A school management portal I built solo: attendance, grading, and messaging for students, teachers, and admins. Log in and explore the live demo.{% endblock %}
+
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
 
@@ -32,12 +37,12 @@
         <div class="hero-deco deco-1"></div>
         <div class="hero-deco deco-2"></div>
         <div class="hero-deco deco-3"></div>
-        <div class="hero-badge">New: Academic Intelligence 2.0</div>
-        <h1 class="hero-title">Empower Your Academic <span>Journey</span> Today.</h1>
-        <p class="hero-subtitle">The ultimate university management portal designed for students, teachers, and administrators. Experience the future of education.</p>
+        <div class="hero-badge">Live demo · try it as admin, teacher, or student</div>
+        <h1 class="hero-title">One dashboard for your school's <span>entire day.</span></h1>
+        <p class="hero-subtitle">Attendance, grading, and messaging for students, teachers, and admins — built to replace the spreadsheets and group chats schools default to.</p>
         <div class="hero-actions">
-            <a href="{{ url_for('auth.login') }}" class="btn-primary-large">Get Started Free</a>
-            <a href="#features" class="btn-secondary-large">Explore Features</a>
+            <a href="{{ url_for('auth.login') }}" class="btn-primary-large">Try the Demo</a>
+            <a href="#features" class="btn-secondary-large">See Features</a>
         </div>
     </header>
 
@@ -112,11 +117,11 @@
                         <div class="terminal-title">system_monitor.sh</div>
                     </div>
                     <div class="terminal-body" id="terminal-content">
-                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">fetch system_stats --live</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">fetch system_stats --demo</span></div>
                         <div class="terminal-line status-success">Initializing Student OS v2.1...</div>
                         <div class="terminal-line">Connection: <span class="highlight">SECURE (SSL/TLS)</span></div>
-                        <div class="terminal-line">Active Students: <span class="highlight pulse" id="live-students">10,482</span></div>
-                        <div class="terminal-line">AI Prediction Accuracy: <span class="highlight">94.8%</span></div>
+                        <div class="terminal-line">Mode: <span class="highlight">DEMO ENVIRONMENT</span></div>
+                        <div class="terminal-line">Core Modules: <span class="highlight">Attendance · Grading · Messaging</span></div>
                         <div class="terminal-line">Server Load: <div class="progress-bar"><div class="progress-fill" style="width: 35%"></div></div></div>
                         <div class="terminal-line"><span class="prompt">$</span> <span class="cursor">_</span></div>
                     </div>
@@ -130,7 +135,7 @@
             <i data-lucide="graduation-cap"></i>
             <span>Student OS</span>
         </div>
-        <p style="color: var(--text-muted); font-size: 0.875rem;">&copy; 2026 Student OS Technical Institute. All rights reserved.</p>
+        <p style="color: var(--text-muted); font-size: 0.875rem;">&copy; 2026 Student OS. Built by Mohitpreet Singh.</p>
     </footer>
 </div>
 
@@ -152,20 +157,10 @@
         observer.observe(card);
     });
 
-    // Terminal Interactivity
-    const liveStudents = document.getElementById('live-students');
+    // Terminal Interactivity (visual flicker only — no fabricated metrics)
     const progressBar = document.querySelector('.progress-fill');
-    
-    let studentCount = 10482;
-    
+
     setInterval(() => {
-        // Randomly increment student count
-        if (Math.random() > 0.7) {
-            studentCount += Math.floor(Math.random() * 3);
-            liveStudents.innerText = studentCount.toLocaleString();
-        }
-        
-        // Randomly flicker progress bar
         const newWidth = 30 + Math.random() * 20;
         progressBar.style.width = `${newWidth}%`;
     }, 3000);

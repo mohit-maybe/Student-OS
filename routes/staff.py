@@ -7,18 +7,8 @@ from extensions import mail
 from helpers import generate_credentials
 import io
 import csv
-import threading
 
 staff_bp = Blueprint('staff', __name__)
-
-def send_email_async(app, msg):
-    """Send email in a background thread to avoid blocking the request."""
-    with app.app_context():
-        try:
-            mail.send(msg)
-            print(f"[EMAIL] Email sent successfully to {msg.recipients}")
-        except Exception as e:
-            print(f"[EMAIL ERROR] Failed to send email: {str(e)}")
 
 @staff_bp.route('/staff/sample_csv')
 @login_required
@@ -91,7 +81,7 @@ def add_teacher():
     mobile = request.form.get('mobile', '').strip()
     department = request.form.get('department', '').strip()
     role = request.form.get('role', 'teacher') # Default to teacher
-    target_school_id = int(request.form.get('school_id', current_user.school_id))
+    target_school_id = request.form.get('school_id', current_user.school_id)
 
     if not full_name or not email:
         flash('Name and Email are required.', 'error')
@@ -118,77 +108,35 @@ def add_teacher():
             )
         db.commit()
 
-        # 3. Send Email with Login Credentials
+        # 3. Send Email
+        msg = Message(
+            'Welcome to the Faculty - Your OS Credentials',
+            recipients=[email]
+        )
+        msg.body = f"""
+        Hello {full_name},
+
+        Welcome to the team! Your teacher account for the Student OS platform has been created.
+
+        Your Login Credentials:
+        -----------------------
+        Portal: {request.host_url}
+        Username: {username}
+        Password: {password}
+
+        Please login and update your profile settings once you have verified access.
+
+        Best Regards,
+        Admin Team
+        """
         try:
-            mail_configured = current_app.config.get('MAIL_USERNAME') and current_app.config.get('MAIL_PASSWORD')
-            if mail_configured:
-                msg = Message(
-                    f'Welcome to {current_app.config.get("UNIVERSITY_NAME", "Student OS")} - Your Faculty Login Credentials',
-                    recipients=[email]
-                )
-                msg.html = f"""
-                <html>
-                <head>
-                    <style>
-                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-                        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                        .header {{ background: linear-gradient(135deg, #6366f1, #a855f7); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
-                        .content {{ background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px; }}
-                        .credentials {{ background: #fff; padding: 20px; border-left: 4px solid #6366f1; margin: 20px 0; border-radius: 5px; }}
-                        .credentials strong {{ color: #6366f1; }}
-                        .button {{ display: inline-block; background: #6366f1; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin-top: 20px; }}
-                        .footer {{ text-align: center; margin-top: 30px; color: #6b7280; font-size: 12px; }}
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>Welcome to the Team!</h1>
-                            <p>Your Faculty Account is Ready</p>
-                        </div>
-                        <div class="content">
-                            <p>Dear <strong>{full_name}</strong>,</p>
-                            <p>We are pleased to inform you that your faculty account for the <strong>{current_app.config.get("UNIVERSITY_NAME", "Student OS")}</strong> platform has been successfully created.</p>
-                            
-                            <div class="credentials">
-                                <h3>Your Login Credentials:</h3>
-                                <p><strong>Portal:</strong> <a href="{request.host_url}">{request.host_url}</a></p>
-                                <p><strong>Username:</strong> {username}</p>
-                                <p><strong>Password:</strong> {password}</p>
-                            </div>
-                            
-                            <p>Please log in using the credentials above and update your password and profile settings after your first login for security purposes.</p>
-                            
-                            <a href="{request.host_url}" class="button">Login to Your Account</a>
-                            
-                            <p>If you have any questions or encounter any issues, please contact the administration team.</p>
-                            
-                            <div class="footer">
-                                <p>This is an automated email. Please do not reply.</p>
-                                <p>&copy; {current_app.config.get("UNIVERSITY_NAME", "Student OS")} - All rights reserved.</p>
-                            </div>
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """
-                # Send email in background thread to prevent timeout
-                thread = threading.Thread(target=send_email_async, args=(current_app._get_current_object(), msg))
-                thread.start()
-                print(f"[EMAIL] Sending credentials email to {email} in background")
-                flash(f'Staff member {full_name} added successfully! Login credentials sent to {email}.', 'success')
-            else:
-                print(f"[EMAIL] Mail not configured. Displaying credentials for {full_name}")
-                flash(f'Staff {full_name} added successfully! Username: {username}, Password: {password}', 'success')
+            mail.send(msg)
+            flash(f'Teacher {full_name} added! Credentials sent to {email}.', 'success')
         except Exception as mail_err:
-            print(f"[EMAIL ERROR] Failed to send email to {email}: {str(mail_err)}")
-            flash(f'Staff added, but email notification failed. Credentials: Username: {username}, Password: {password}', 'warning')
+            flash(f'Teacher added, but email notification failed: {str(mail_err)}', 'warning')
 
     except Exception as e:
         db.rollback()
-        import traceback
-        print(f"Error adding teacher: {str(e)}")
-        print(traceback.format_exc())
         flash(f'Error adding teacher: {str(e)}', 'error')
 
     return redirect(url_for('staff.list_staff', school_id=target_school_id))
@@ -220,7 +168,7 @@ def import_teachers():
         flash('Only admins can bulk import staff.', 'error')
         return redirect(url_for('dashboard.dashboard'))
     
-    target_school_id = int(request.form.get('school_id', current_user.school_id))
+    target_school_id = request.form.get('school_id', current_user.school_id)
 
     file = request.files.get('file')
     if not file or not file.filename.endswith('.csv'):
@@ -254,7 +202,7 @@ def import_teachers():
                 if not full_name or not email:
                     continue
                 
-                username, password = generate_credentials(full_name, role='teacher')
+                username, password = generate_credentials(full_name)
                 hashed_password = generate_password_hash(password)
                 
                 try:
@@ -271,69 +219,12 @@ def import_teachers():
                         (user_id, full_name, email, mobile or None, department, status, target_school_id)
                     )
                     
-                    # 3. Send Credentials Email (async to prevent timeout)
+                    # 3. Send Credentials Email
+                    msg = Message('Student OS - Faculty Credentials', recipients=[email])
+                    msg.body = f"Welcome Professor {full_name}!\n\nYour faculty account is ready.\nUsername: {username}\nPassword: {password}\n\nLogin: {request.host_url}"
                     try:
-                        mail_configured = current_app.config.get('MAIL_USERNAME') and current_app.config.get('MAIL_PASSWORD')
-                        if mail_configured:
-                            msg = Message(
-                                f'Welcome to {current_app.config.get("UNIVERSITY_NAME", "Student OS")} - Your Faculty Login Credentials',
-                                recipients=[email]
-                            )
-                            msg.html = f"""
-                            <html>
-                            <head>
-                                <style>
-                                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-                                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                                    .header {{ background: linear-gradient(135deg, #6366f1, #a855f7); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
-                                    .content {{ background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px; }}
-                                    .credentials {{ background: #fff; padding: 20px; border-left: 4px solid #6366f1; margin: 20px 0; border-radius: 5px; }}
-                                    .credentials strong {{ color: #6366f1; }}
-                                    .button {{ display: inline-block; background: #6366f1; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin-top: 20px; }}
-                                    .footer {{ text-align: center; margin-top: 30px; color: #6b7280; font-size: 12px; }}
-                                </style>
-                            </head>
-                            <body>
-                                <div class="container">
-                                    <div class="header">
-                                        <h1>Welcome to the Team!</h1>
-                                        <p>Your Faculty Account is Ready</p>
-                                    </div>
-                                    <div class="content">
-                                        <p>Dear <strong>{full_name}</strong>,</p>
-                                        <p>We are pleased to inform you that your faculty account for the <strong>{current_app.config.get("UNIVERSITY_NAME", "Student OS")}</strong> platform has been successfully created.</p>
-                                        
-                                        <div class="credentials">
-                                            <h3>Your Login Credentials:</h3>
-                                            <p><strong>Portal:</strong> <a href="{request.host_url}">{request.host_url}</a></p>
-                                            <p><strong>Username:</strong> {username}</p>
-                                            <p><strong>Password:</strong> {password}</p>
-                                        </div>
-                                        
-                                        <p>Please log in using the credentials above and update your password and profile settings after your first login for security purposes.</p>
-                                        
-                                        <a href="{request.host_url}" class="button">Login to Your Account</a>
-                                        
-                                        <p>If you have any questions or encounter any issues, please contact the administration team.</p>
-                                        
-                                        <div class="footer">
-                                            <p>This is an automated email. Please do not reply.</p>
-                                            <p>&copy; {current_app.config.get("UNIVERSITY_NAME", "Student OS")} - All rights reserved.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </body>
-                            </html>
-                            """
-                            # Send email in background thread to prevent timeout
-                            thread = threading.Thread(target=send_email_async, args=(current_app._get_current_object(), msg))
-                            thread.start()
-                            print(f"[EMAIL] Sending credentials email to {email} in background")
-                        else:
-                            print(f"[EMAIL] Mail not configured for {email}")
-                    except Exception as mail_err:
-                        print(f"[EMAIL ERROR] Failed to send email to {email}: {str(mail_err)}")
-                        errors.append(f"Email failed for {email}: {str(mail_err)}")
+                        mail.send(msg)
+                    except: pass
                     
                     count += 1
                 except Exception as e:
@@ -363,7 +254,7 @@ def update_staff(user_id):
     department = request.form.get('department')
     role = request.form.get('role')
     status = request.form.get('status')
-    target_school_id = int(request.form.get('school_id', current_user.school_id))
+    target_school_id = request.form.get('school_id', current_user.school_id)
     
     db = get_db()
     try:
@@ -388,7 +279,7 @@ def toggle_staff_status(user_id):
     if redir: return redir
     
     new_status = request.form.get('status')
-    target_school_id = int(request.form.get('school_id', current_user.school_id))
+    target_school_id = request.form.get('school_id', current_user.school_id)
     db = get_db()
     try:
         with db_cursor(db) as cursor:

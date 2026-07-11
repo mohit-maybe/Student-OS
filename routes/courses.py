@@ -246,8 +246,7 @@ def submit_assignment(course_id, assignment_id):
 
     # For GET request, render a submission form
     db = get_db()
-    from db import db_cursor
-    with db_cursor(db) as cursor:
+    with db.cursor() as cursor:
         cursor.execute('SELECT * FROM assignments WHERE id = %s AND school_id = %s', (assignment_id, current_user.school_id))
         assignment = cursor.fetchone()
         if not assignment:
