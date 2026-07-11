@@ -5,11 +5,10 @@ import qrcode
 import csv
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, send_file, Response
 from flask_login import login_required, current_user
-from flask_mail import Message
 from werkzeug.security import generate_password_hash
 from db import get_db, db_cursor
 from helpers import generate_credentials
-from extensions import mail
+from brevo_mail import send_email
 
 admissions_bp = Blueprint('admissions', __name__)
 
@@ -122,29 +121,23 @@ def enroll():
                     print(f"[Admissions] Failed to auto-link/verify email: {e}")
             
             # 3. Send Email
-            from extensions import mail
-            msg = Message(
-                'Welcome to Student OS - Your Login Credentials',
-                recipients=[email]
-            )
-            msg.body = f"""
-            Dear {full_name},
+            email_body = f"""Dear {full_name},
 
-            Welcome to our institution! Your student account has been successfully created.
+Welcome to our institution! Your student account has been successfully created.
 
-            Here are your login credentials:
-            Username: {username}
-            Password: {password}
-            Admission Number: {admission_number}
+Here are your login credentials:
+Username: {username}
+Password: {password}
+Admission Number: {admission_number}
 
-            Please login at: {request.host_url}
-            
-            Regards,
-            Administration
-            """
-            
+Please login at: {request.host_url}
+
+Regards,
+Administration
+"""
+
             try:
-                mail.send(msg)
+                send_email(email, 'Welcome to Student OS - Your Login Credentials', email_body)
                 flash(f'Student enrolled successfully! Credentials sent to {email}.', 'success')
             except Exception as e:
                 flash(f'Student enrolled, but email failed: {str(e)}', 'warning')
@@ -260,7 +253,6 @@ def import_students():
     errors = []
     
     try:
-        from extensions import mail
         with db_cursor(db) as cursor:
             for row in csv_input:
                 full_name = row.get('full_name', '').strip()
@@ -295,14 +287,10 @@ def import_students():
                     )
                     
                     # 3. Send Credentials Email
-                    msg = Message(
-                        'Student OS - Your Login Credentials',
-                        recipients=[email]
-                    )
-                    msg.body = f"Welcome {full_name}!\n\nYour account is ready.\nUsername: {username}\nPassword: {password}\n\nLogin: {request.host_url}"
+                    email_body = f"Welcome {full_name}!\n\nYour account is ready.\nUsername: {username}\nPassword: {password}\n\nLogin: {request.host_url}"
                     # Try sending but don't fail the whole import if one fails
                     try:
-                        mail.send(msg)
+                        send_email(email, 'Student OS - Your Login Credentials', email_body)
                     except: pass
                     
                     count += 1
