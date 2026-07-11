@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, send_from_directory, current_app, send_file
+from flask import Blueprint, render_template, redirect, url_for, flash, request, send_from_directory, current_app, send_file, abort
 from flask_login import login_required, current_user
-from db import get_db
+from db import get_db, db_cursor
 from helpers import add_notification
 from reports import generate_student_report_card
 import io
@@ -277,5 +277,37 @@ def save_remarks():
 
 @academic_bp.route('/uploads/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+    # School logos are shown on public (unauthenticated) pages, so they stay open.
+    if filename.startswith('logo_'):
+        return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
 
+    # Everything else (assignment attachments, submissions, exam docs) contains
+    # potentially private student work -- require login and verify the file
+    # actually belongs to something in the requester's school.
+    if not current_user.is_authenticated:
+        abort(401)
+
+    db = get_db()
+    with db_cursor(db) as cursor:
+        cursor.execute(
+            'SELECT 1 FROM assignments WHERE attachment_path = %s AND school_id = %s',
+            (filename, current_user.school_id)
+        )
+        found = cursor.fetchone()
+        if not found:
+            cursor.execute(
+                'SELECT 1 FROM submissions WHERE attachment_path = %s AND school_id = %s',
+                (filename, current_user.school_id)
+            )
+            found = cursor.fetchone()
+        if not found:
+            cursor.execute(
+                'SELECT 1 FROM exam_assets WHERE file_path = %s AND school_id = %s',
+                (filename, current_user.school_id)
+            )
+            found = cursor.fetchone()
+
+    if not found:
+        abort(403)
+
+    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
