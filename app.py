@@ -34,6 +34,13 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['UNIVERSITY_NAME'] = 'GLOBAL UNIVERSITY OF OS'
 app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)  # Remember me for 30 days
 
+# Session cookie hardening
+app.config['SESSION_COOKIE_HTTPONLY'] = True   # JS can't read the session cookie
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF-adjacent protection
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV') != 'development'  # HTTPS-only in production
+app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+app.config['REMEMBER_COOKIE_SECURE'] = os.getenv('FLASK_ENV') != 'development'
+
 # Mail Configuration (Gmail)
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
