@@ -87,7 +87,16 @@ def _get_reset_serializer():
 
 
 def _find_email_for_user(cursor, user_id):
-    """Look up the email on file for a user, checking student then teacher records."""
+    """
+    Look up the best email to use for a user: prefer their verified linked
+    account email, then fall back to legacy student/teacher record emails
+    for accounts that haven't linked/verified an email yet.
+    """
+    from helpers import get_account_email
+    email, verified = get_account_email(cursor, user_id)
+    if email and verified:
+        return email
+
     cursor.execute('SELECT email FROM student_details WHERE user_id = %s', (user_id,))
     row = cursor.fetchone()
     if row and row['email']:
@@ -96,7 +105,9 @@ def _find_email_for_user(cursor, user_id):
     row = cursor.fetchone()
     if row and row['email']:
         return row['email']
-    return None
+
+    # Last resort: an unverified linked email is still better than nothing.
+    return email
 
 
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
@@ -174,3 +185,43 @@ def reset_password(token):
         return redirect(url_for('auth.login'))
 
     return render_template('reset_password.html', token=token)
+
+
+@auth_bp.route('/verify-email/<token>')
+def verify_email(token):
+    from itsdangerous import SignatureExpired, BadSignature
+    from helpers import get_token_serializer
+    from db import get_db, db_cursor
+
+    try:
+        data = get_token_serializer('email-verify').loads(token, max_age=86400)  # 24 hour expiry
+    except SignatureExpired:
+        flash('This verification link has expired. Please request a new one from Settings.', 'error')
+        return redirect(url_for('auth.login'))
+    except BadSignature:
+        flash('This verification link is invalid.', 'error')
+        return redirect(url_for('auth.login'))
+
+    user_id = data.get('user_id')
+    email = data.get('email')
+
+    db = get_db()
+    with db_cursor(db) as cursor:
+        # Only mark verified if the email still matches what's currently linked
+        # (protects against a stale link if the person changed their email again since).
+        cursor.execute('SELECT email FROM user_emails WHERE user_id = %s', (user_id,))
+        row = cursor.fetchone()
+        if not row or row['email'] != email:
+            flash('This verification link no longer matches your linked email. Please request a new one.', 'error')
+            return redirect(url_for('auth.login'))
+
+        cursor.execute(
+            'UPDATE user_emails SET is_verified = %s, verified_at = CURRENT_TIMESTAMP WHERE user_id = %s',
+            (True, user_id)
+        )
+    db.commit()
+
+    flash('Your email has been verified!', 'success')
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard.settings'))
+    return redirect(url_for('auth.login'))

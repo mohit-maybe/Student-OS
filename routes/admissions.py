@@ -109,6 +109,17 @@ def enroll():
                 )
             
             db.commit()
+
+            # Auto-link this email to the account and send a verification link,
+            # so it's usable for password recovery once confirmed.
+            if email:
+                try:
+                    import types
+                    from helpers import link_email_and_send_verification
+                    new_user = types.SimpleNamespace(id=user_id, username=username)
+                    link_email_and_send_verification(db, new_user, email)
+                except Exception as e:
+                    print(f"[Admissions] Failed to auto-link/verify email: {e}")
             
             # 3. Send Email
             from extensions import mail

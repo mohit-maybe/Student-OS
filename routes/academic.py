@@ -311,3 +311,4 @@ def uploaded_file(filename):
         abort(403)
 
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+
