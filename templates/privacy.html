@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block page_title %}Privacy Notice — Student OS{% endblock %}
+
+{% block content %}
+<div style="max-width: 760px; margin: 0 auto; padding: 4rem 1.5rem; line-height: 1.7;">
+    <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem;">Privacy Notice</h1>
+    <p style="color: var(--text-muted); margin-bottom: 2.5rem;">Last updated: {{ current_year }}</p>
+
+    <p>Student OS is a school management tool built by a solo developer, currently running as a demo and pilot
+        with a small number of schools. This notice explains, in plain language, what data the platform handles
+        and how it's protected. It isn't a substitute for a full legal privacy policy — if your school is
+        considering using this beyond a pilot, ask for that conversation directly.</p>
+
+    <h2 style="margin-top: 2rem; font-size: 1.25rem; font-weight: 700;">What data is collected</h2>
+    <p>Depending on your role, the platform stores: your name, username, and email; for students — attendance
+        records, grades, assignment submissions, and (if provided) parent contact details; for teachers —
+        department and course assignments; and messages sent through the built-in messaging feature.</p>
+
+    <h2 style="margin-top: 2rem; font-size: 1.25rem; font-weight: 700;">Why it's collected</h2>
+    <p>Solely to run the core features you're using it for — attendance tracking, grading, assignments, and
+        communication between students, teachers, and admins within your school. Nothing is used for advertising,
+        and nothing is sold or shared with third parties.</p>
+
+    <h2 style="margin-top: 2rem; font-size: 1.25rem; font-weight: 700;">Who can see it</h2>
+    <p>Access is role-based and scoped to your school. Students see their own records; teachers see records for
+        their courses; admins see records for their school. Data from one school is not visible to another school
+        on the platform.</p>
+
+    <h2 style="margin-top: 2rem; font-size: 1.25rem; font-weight: 700;">How it's protected</h2>
+    <p>Passwords are hashed, not stored in plain text. Uploaded files (assignments, submissions, documents) require
+        login to access. Email addresses linked to an account go through a verification step before being used for
+        password recovery.</p>
+
+    <h2 style="margin-top: 2rem; font-size: 1.25rem; font-weight: 700;">Pilot-stage limitations, honestly stated</h2>
+    <p>This is an early-stage project. It has not been through a formal third-party security audit, and it does
+        not yet have automated backup guarantees beyond what the hosting provider offers by default. If your
+        school is piloting this, please avoid relying on it as the sole record of critical data until those
+        guarantees are in place.</p>
+
+    <h2 style="margin-top: 2rem; font-size: 1.25rem; font-weight: 700;">Questions or concerns</h2>
+    <p>If you'd like data corrected or removed, or have any concern about how information is being handled, reach
+        out via the <a href="https://tally.so/r/0QL8QB" target="_blank">contact form</a> and it'll be addressed
+        directly.</p>
+</div>
+{% endblock %}

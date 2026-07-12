@@ -26,7 +26,6 @@ def dashboard():
         # Fetch questions
         questions = []
         if topics:
-            topic_ids = [t['id'] for t in topics]
             cursor.execute('SELECT q.*, t.topic_name FROM predicted_questions q JOIN predicted_topics t ON q.topic_id = t.id WHERE t.student_id = %s AND q.school_id = %s', (current_user.id, current_user.school_id))
             questions = cursor.fetchall()
             

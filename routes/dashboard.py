@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from flask_login import login_required, current_user
 from flask_babel import _
-from db import get_db
-from helpers import calculate_gpa
+from db import get_db, db_cursor
+from helpers import calculate_gpa, get_account_email, link_email_and_send_verification, send_verification_email
 
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -226,7 +226,45 @@ def settings():
         {'code': 'kn', 'name': 'Kannada (ಕನ್ನಡ)'},
         {'code': 'ml', 'name': 'Malayalam (മലയാളം)'}
     ]
-    return render_template('settings.html', user=current_user, languages=languages, current_lang=session.get('language', 'en'))
+    db = get_db()
+    with db_cursor(db) as cursor:
+        account_email, email_verified = get_account_email(cursor, current_user.id)
+    return render_template('settings.html', user=current_user, languages=languages,
+                            current_lang=session.get('language', 'en'),
+                            account_email=account_email, email_verified=email_verified)
+
+
+@dashboard_bp.route('/settings/email', methods=['POST'])
+@login_required
+def update_email():
+    email = request.form.get('email', '').strip().lower()
+    if not email or '@' not in email:
+        flash('Please enter a valid email address.', 'error')
+        return redirect(url_for('dashboard.settings'))
+
+    db = get_db()
+    link_email_and_send_verification(db, current_user, email)
+    flash(f'Verification email sent to {email}. Check your inbox to confirm it.', 'success')
+    return redirect(url_for('dashboard.settings'))
+
+
+@dashboard_bp.route('/settings/email/resend', methods=['POST'])
+@login_required
+def resend_email_verification():
+    db = get_db()
+    with db_cursor(db) as cursor:
+        account_email, verified = get_account_email(cursor, current_user.id)
+
+    if not account_email:
+        flash('Link an email address first.', 'error')
+    elif verified:
+        flash('This email is already verified.', 'success')
+    else:
+        # Re-link generates a fresh token and re-sends the email.
+        link_email_and_send_verification(db, current_user, account_email)
+        flash('Verification email resent. Check your inbox.', 'success')
+
+    return redirect(url_for('dashboard.settings'))
 
 @dashboard_bp.route('/set_language/<lang_code>')
 @login_required

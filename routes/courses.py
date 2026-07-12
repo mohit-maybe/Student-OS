@@ -246,11 +246,12 @@ def submit_assignment(course_id, assignment_id):
 
     # For GET request, render a submission form
     db = get_db()
-    with db.cursor() as cursor:
+    from db import db_cursor
+    with db_cursor(db) as cursor:
         cursor.execute('SELECT * FROM assignments WHERE id = %s AND school_id = %s', (assignment_id, current_user.school_id))
         assignment = cursor.fetchone()
         if not assignment:
             flash('Assignment not found.', 'error')
             return redirect(url_for('courses.course_details', course_id=course_id))
     
-    return render_template('submit_assignment.html', course_id=course_id, assignment=assignment, user=current_user)
+    return render_template('submission_form.html', course_id=course_id, assignment=assignment, user=current_user)

@@ -1,7 +1,13 @@
 import os
+import socket
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Safety net: without this, a slow/unreachable outbound connection (e.g. the
+# SMTP server during a mail send) can block a request thread indefinitely,
+# since neither Flask-Mail nor the stdlib smtplib set a timeout by default.
+socket.setdefaulttimeout(15)
 
 from datetime import timedelta
 from flask import Flask, redirect, url_for, render_template
@@ -179,6 +185,10 @@ def index():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.dashboard'))
     return render_template('landing.html')
+
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
 
 @app.errorhandler(404)
 def page_not_found(e):

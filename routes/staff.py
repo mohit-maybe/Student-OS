@@ -108,6 +108,15 @@ def add_teacher():
             )
         db.commit()
 
+        # Auto-link this email to the account and send a verification link.
+        try:
+            import types
+            from helpers import link_email_and_send_verification
+            new_user = types.SimpleNamespace(id=user_id, username=username)
+            link_email_and_send_verification(db, new_user, email)
+        except Exception as e:
+            print(f"[Staff] Failed to auto-link/verify email: {e}")
+
         # 3. Send Email
         msg = Message(
             'Welcome to the Faculty - Your OS Credentials',

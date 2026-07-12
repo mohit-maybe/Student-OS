@@ -92,7 +92,7 @@ def send_message():
     
     if not content:
         flash('Message cannot be empty.', 'error')
-        return redirect(request.referrer)
+        return redirect(request.referrer or url_for('messages.inbox'))
 
     db = get_db()
     from db import db_cursor

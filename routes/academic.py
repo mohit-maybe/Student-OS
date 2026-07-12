@@ -273,7 +273,7 @@ def save_remarks():
         
         db.commit()
     flash('Performance evaluation updated!', 'success')
-    return redirect(request.referrer)
+    return redirect(request.referrer or url_for('classrooms.index'))
 
 @academic_bp.route('/uploads/<filename>')
 def uploaded_file(filename):
