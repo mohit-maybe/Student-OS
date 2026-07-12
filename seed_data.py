@@ -52,7 +52,7 @@ def seed():
         
         created_teachers = []
         for username, password, role in teachers:
-            pwd_hash = generate_password_hash(password)
+            pwd_hash = generate_password_hash(password, method='pbkdf2:sha256')
             cursor.execute('INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s) RETURNING id',
                        (username, pwd_hash, role))
             user_id = cursor.fetchone()['id']
@@ -70,7 +70,7 @@ def seed():
         
         created_students = []
         for username, name in students_data:
-            pwd_hash = generate_password_hash('password')
+            pwd_hash = generate_password_hash('password', method='pbkdf2:sha256')
             cursor.execute('INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s) RETURNING id',
                        (username, pwd_hash, 'student'))
             user_id = cursor.fetchone()['id']

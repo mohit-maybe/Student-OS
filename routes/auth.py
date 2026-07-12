@@ -178,7 +178,7 @@ def reset_password(token):
         db = get_db()
         with db_cursor(db) as cursor:
             cursor.execute('UPDATE users SET password_hash = %s WHERE id = %s',
-                       (generate_password_hash(password), user.id))
+                       (generate_password_hash(password, method='pbkdf2:sha256'), user.id))
         db.commit()
 
         flash('Your password has been updated. Please log in.', 'success')

@@ -88,7 +88,7 @@ def add_teacher():
         return redirect(url_for('staff.list_staff', school_id=target_school_id))
 
     username, password = generate_credentials(full_name, role=role)
-    hashed_pwd = generate_password_hash(password)
+    hashed_pwd = generate_password_hash(password, method='pbkdf2:sha256')
 
     db = get_db()
     try:
@@ -212,7 +212,7 @@ def import_teachers():
                     continue
                 
                 username, password = generate_credentials(full_name)
-                hashed_password = generate_password_hash(password)
+                hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
                 
                 try:
                     # 1. Create User

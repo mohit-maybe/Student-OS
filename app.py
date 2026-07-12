@@ -223,7 +223,7 @@ def seed_demo_data(db):
         teacher_ids = []
         for username, pwd, name in teachers:
             cursor.execute('INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s) RETURNING id',
-                       (username, generate_password_hash(pwd), 'teacher'))
+                       (username, generate_password_hash(pwd, method='pbkdf2:sha256'), 'teacher'))
             teacher_ids.append(cursor.fetchone()[0])
 
         # 2. Create Courses
@@ -248,7 +248,7 @@ def seed_demo_data(db):
         ]
         
         for i, (username, name, email) in enumerate(students_data):
-            pwd_hash = generate_password_hash('password')
+            pwd_hash = generate_password_hash('password', method='pbkdf2:sha256')
             cursor.execute('INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s) RETURNING id',
                        (username, pwd_hash, 'student'))
             user_id = cursor.fetchone()[0]
@@ -318,7 +318,7 @@ def startup_init():
                         print(f"[SECURITY] Set ADMIN_PASSWORD in your environment to control this.")
                         print("=" * 60)
                     cursor.execute('INSERT INTO users (username, password_hash, role, school_id) VALUES (%s, %s, %s, %s)',
-                               (admin_username, generate_password_hash(admin_password), 'admin', 1))
+                               (admin_username, generate_password_hash(admin_password, method='pbkdf2:sha256'), 'admin', 1))
                     db.commit()
 
                 # 2. Create Group Chat system user (ID 0)

@@ -86,7 +86,7 @@ def enroll():
         classroom_id = request.form.get('classroom_id') or None
         
         username, password = generate_credentials(full_name)
-        hashed_password = generate_password_hash(password)
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         
         try:
             from db import db_cursor
@@ -267,7 +267,7 @@ def import_students():
                     continue
                 
                 username, password = generate_credentials(full_name)
-                hashed_password = generate_password_hash(password)
+                hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
                 
                 try:
                     # 1. Create User
