@@ -96,7 +96,7 @@ def link_email_and_send_verification(db, user, email):
 def send_verification_email(user, email, token):
     from flask import url_for, current_app
     from flask_mail import Message
-    from extensions import mail
+    from extensions import send_async
 
     verify_url = url_for('auth.verify_email', token=token, _external=True)
     try:
@@ -107,6 +107,6 @@ def send_verification_email(user, email, token):
             f"(expires in 24 hours):\n\n{verify_url}\n\n"
             f"If you didn't request this, you can safely ignore this email."
         )
-        mail.send(msg)
+        send_async(current_app._get_current_object(), msg)
     except Exception as e:
         print(f"[Email Verification] Failed to send email to {email}: {e}")

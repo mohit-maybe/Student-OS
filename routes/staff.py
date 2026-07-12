@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from flask_mail import Message
 from werkzeug.security import generate_password_hash
 from db import get_db, db_cursor
-from extensions import mail
+from extensions import send_async
 from helpers import generate_credentials
 import io
 import csv
@@ -139,8 +139,8 @@ def add_teacher():
         Admin Team
         """
         try:
-            mail.send(msg)
-            flash(f'Teacher {full_name} added! Credentials sent to {email}.', 'success')
+            send_async(current_app._get_current_object(), msg)
+            flash(f'Teacher {full_name} added! Credentials are being emailed to {email}.', 'success')
         except Exception as mail_err:
             flash(f'Teacher added, but email notification failed: {str(mail_err)}', 'warning')
 
@@ -232,8 +232,9 @@ def import_teachers():
                     msg = Message('Student OS - Faculty Credentials', recipients=[email])
                     msg.body = f"Welcome Professor {full_name}!\n\nYour faculty account is ready.\nUsername: {username}\nPassword: {password}\n\nLogin: {request.host_url}"
                     try:
-                        mail.send(msg)
-                    except: pass
+                        send_async(current_app._get_current_object(), msg)
+                    except Exception:
+                        pass
                     
                     count += 1
                 except Exception as e:

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from models import User
 import time
@@ -125,7 +125,7 @@ def forgot_password():
         # so this endpoint can't be used to enumerate valid usernames.
         if user and email:
             try:
-                from extensions import mail
+                from extensions import send_async
                 from flask_mail import Message
                 token = _get_reset_serializer().dumps({'user_id': user.id})
                 reset_url = url_for('auth.reset_password', token=token, _external=True)
@@ -135,7 +135,7 @@ def forgot_password():
                     f"Reset your password here (this link expires in 1 hour):\n{reset_url}\n\n"
                     f"If you didn't request this, you can safely ignore this email."
                 )
-                mail.send(msg)
+                send_async(current_app._get_current_object(), msg)
             except Exception as e:
                 print(f"[Password Reset] Failed to send email: {e}")
 

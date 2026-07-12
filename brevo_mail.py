@@ -1,4 +1,5 @@
 import os
+from threading import Thread
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 
@@ -39,3 +40,19 @@ def send_email(to_email, subject, body_text):
         return True
     except ApiException as e:
         raise Exception(f"Brevo API error: {e}")
+
+
+def send_email_async(to_email, subject, body_text):
+    """Fire-and-forget version of send_email: runs the API call in a
+    background thread so the request handling the form submission doesn't
+    have to wait on the HTTP round-trip to Brevo before responding.
+    Failures are logged, not raised, since there's no request left to
+    surface them to by the time the thread runs.
+    """
+    def _send():
+        try:
+            send_email(to_email, subject, body_text)
+        except Exception as e:
+            print(f"[Async Brevo Mail] Failed to send '{subject}' to {to_email}: {e}")
+
+    Thread(target=_send, daemon=True).start()

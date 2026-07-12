@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 from db import get_db, db_cursor
 from helpers import generate_credentials
-from brevo_mail import send_email
+from brevo_mail import send_email_async
 
 admissions_bp = Blueprint('admissions', __name__)
 
@@ -137,8 +137,8 @@ Administration
 """
 
             try:
-                send_email(email, 'Welcome to Student OS - Your Login Credentials', email_body)
-                flash(f'Student enrolled successfully! Credentials sent to {email}.', 'success')
+                send_email_async(email, 'Welcome to Student OS - Your Login Credentials', email_body)
+                flash(f'Student enrolled successfully! Credentials are being emailed to {email}.', 'success')
             except Exception as e:
                 flash(f'Student enrolled, but email failed: {str(e)}', 'warning')
                 print(f"Mail error: {e}")
@@ -290,8 +290,9 @@ def import_students():
                     email_body = f"Welcome {full_name}!\n\nYour account is ready.\nUsername: {username}\nPassword: {password}\n\nLogin: {request.host_url}"
                     # Try sending but don't fail the whole import if one fails
                     try:
-                        send_email(email, 'Student OS - Your Login Credentials', email_body)
-                    except: pass
+                        send_email_async(email, 'Student OS - Your Login Credentials', email_body)
+                    except Exception:
+                        pass
                     
                     count += 1
                 except Exception as e:
