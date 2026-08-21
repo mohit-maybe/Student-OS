@@ -1,0 +1,32 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "MAIL_USERNAME",
+      "description": "Gmail address for Flask-Mail SMTP (email features). Optional — not required to boot.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "MAIL_PASSWORD",
+      "description": "Gmail app password for Flask-Mail SMTP. Optional — not required to boot.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "BREVO_API_KEY",
+      "description": "Brevo (Sendinblue) API key starting with xkeysib-... for transactional email via brevo_mail.py. Optional.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "SENDER_EMAIL",
+      "description": "Brevo-verified sender email address for transactional email. Optional.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "SENDER_NAME",
+      "description": "Display name shown to email recipients (defaults to 'Student OS'). Optional.",
+      "requiredAtBoot": false
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.base44
+    # Live source mounted over the image's /app so edits appear without rebuilds.
+    volumes:
+      - ./:/app
+      - uploads_data:/app/uploads
+    ports:
+      - "3000:5000"
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      # Keep the dev server reachable through the preview's external hostname.
+      - FLASK_ENV=development
+    command: python app.py
+    restart: unless-stopped
+
+volumes:
+  uploads_data:
