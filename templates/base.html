@@ -1,200 +1,136 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block page_title %}Student OS — School Management Portal{% endblock %}</title>
-    <meta name="description" content="{% block meta_description %}Attendance, grading, and messaging for students, teachers, and admins — one dashboard for a school's entire day.{% endblock %}">
-
-    <!-- Open Graph / LinkedIn / Facebook -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>{% block page_title %}Student OS — Academic command center{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}A focused academic command center for students, teachers, and school teams.{% endblock %}">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="{% block og_title %}Student OS — School Management Portal{% endblock %}">
-    <meta property="og:description" content="{% block og_description %}Attendance, grading, and messaging for students, teachers, and admins — one dashboard for a school's entire day. Try the live demo.{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}Student OS — Academic command center{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}A focused academic command center for students, teachers, and school teams.{% endblock %}">
     <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/student_os_email_banner.png', _external=True) }}{% endblock %}">
     <meta property="og:url" content="{{ request.url }}">
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{% block twitter_title %}Student OS — School Management Portal{% endblock %}">
-    <meta name="twitter:description" content="{% block twitter_description %}Attendance, grading, and messaging for students, teachers, and admins — one dashboard for a school's entire day.{% endblock %}">
-    <meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='images/student_os_email_banner.png', _external=True) }}{% endblock %}">
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
-    
-
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
-        const setTheme = (theme) => {
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-
-            // Sync any existing toggle checkboxes on the page
-            const themeCheckbox = document.getElementById('theme-checkbox');
-            if (themeCheckbox) {
-                themeCheckbox.checked = theme === 'dark';
-            }
-        }
-
-        // Apply theme immediately from localStorage or system preference
-        const savedTheme = localStorage.getItem('theme') ||
-            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        document.documentElement.setAttribute('data-theme', savedTheme);
-
-        // Loading Bar Logic
-        document.addEventListener('DOMContentLoaded', () => {
-            const loader = document.querySelector('.page-loading-bar');
-
-            // Initial load animation
-            if (loader) {
-                loader.style.width = '30%';
-                setTimeout(() => {
-                    loader.style.width = '70%';
-                }, 200);
-                setTimeout(() => {
-                    loader.style.width = '100%';
-                    setTimeout(() => {
-                        loader.style.opacity = '0';
-                        setTimeout(() => {
-                            loader.style.width = '0%';
-                        }, 200);
-                    }, 500);
-                }, 600);
-            }
-
-            // Trigger on links
-            document.querySelectorAll('a').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    const href = link.getAttribute('href');
-                    if (href && href.startsWith('/') && !href.startsWith('#') && !e.ctrlKey && !e.metaKey) {
-                        if (loader) {
-                            loader.style.opacity = '1';
-                            loader.style.width = '0%';
-                            requestAnimationFrame(() => {
-                                loader.style.width = '80%';
-                            });
-                        }
-                    }
-                });
-            });
-
-            // Trigger on forms
-            document.querySelectorAll('form').forEach(form => {
-                form.addEventListener('submit', () => {
-                    if (loader) {
-                        loader.style.opacity = '1';
-                        loader.style.width = '0%';
-                        requestAnimationFrame(() => {
-                            loader.style.width = '90%';
-                        });
-                    }
-                });
-            });
-        });
+        (() => {
+            const stored = localStorage.getItem('theme');
+            const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            document.documentElement.dataset.theme = stored || system;
+        })();
     </script>
+    {% block head_extra %}{% endblock %}
 </head>
-
 <body class="{% block body_class %}{% endblock %}">
-    <div class="page-loading-bar"></div>
-    <!-- Sidebar Overlay for Mobile -->
-    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <div class="page-loading-bar" aria-hidden="true"></div>
+    <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
 
-    <!-- Mobile Header -->
-    <div class="mobile-header">
-        <div class="brand">
-            {% if current_school.logo_path %}
-            <img src="{{ url_for('academic.uploaded_file', filename=current_school.logo_path) }}" alt="Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 6px;">
-            {% else %}
-            <i data-lucide="graduation-cap"></i>
-            {% endif %}
+    <header class="mobile-header">
+        <a class="mobile-brand" href="{{ url_for('dashboard.dashboard') if current_user.is_authenticated else url_for('index') }}" aria-label="Student OS home">
+            <span class="brand-mark" aria-hidden="true"><i data-lucide="book-open-check"></i></span>
             <span>{{ current_school.name if current_school else 'Student OS' }}</span>
-        </div>
-        <button id="mobile-toggle" aria-label="Toggle Menu">
-            <i data-lucide="menu"></i>
+        </a>
+        <button id="mobile-toggle" class="icon-button" type="button" aria-label="Open navigation" aria-controls="app-sidebar" aria-expanded="false">
+            <i data-lucide="menu" aria-hidden="true"></i>
         </button>
-    </div>
+    </header>
 
-    <div class="toast-container"
-        style="position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; max-width: 400px; width: 90%;">
+    <div class="toast-stack" role="status" aria-live="polite" aria-atomic="true">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert {{ category }}"
-            style="border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid var(--border-color);">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.75rem 1rem;">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}" role="alert">
+                <span class="alert-icon" aria-hidden="true"><i data-lucide="{% if category == 'success' %}check-circle-2{% elif category == 'error' %}circle-alert{% elif category == 'warning' %}triangle-alert{% else %}info{% endif %}"></i></span>
                 <span>{{ message }}</span>
-                <button onclick="this.parentElement.parentElement.remove()"
-                    style="background: none; border: none; color: inherit; cursor: pointer; padding: 0; font-size: 1.25rem; line-height: 1;">&times;</button>
+                <button class="alert-dismiss" type="button" aria-label="Dismiss message" onclick="this.closest('.alert').remove()">&times;</button>
             </div>
-        </div>
-        {% endfor %}
-        <script>
-            document.querySelectorAll('.alert').forEach(alert => {
-                setTimeout(() => {
-                    alert.classList.add('fade-out');
-                    setTimeout(() => {
-                        alert.remove();
-                    }, 500); // Match this with CSS animation duration
-                }, 5000); // 5 seconds display time
-            });
-        </script>
+            {% endfor %}
         {% endif %}
         {% endwith %}
     </div>
 
-    <main class="content-wrapper">
+    <main id="main-content" class="content-wrapper">
         {% block content %}{% endblock %}
     </main>
 
+    {% if current_user.is_authenticated %}
     <footer class="app-footer">
         <div class="footer-content">
-            <div class="footer-info">
-                <span>&copy; {{ current_year }} {{ current_school.name if current_school else 'Student OS' }}</span>
-                {% if current_school.academic_session %}
-                <span class="badge-session">{{ current_school.academic_session }}</span>
-                {% endif %}
-            </div>
-            {% if current_school.support_email %}
-            <div class="footer-support">
-                <i data-lucide="help-circle"></i>
-                <a href="mailto:{{ current_school.support_email }}">{{ current_school.support_email }}</a>
-            </div>
+            <span>&copy; {{ current_year }} {{ current_school.name if current_school else 'Student OS' }}</span>
+            {% if current_school and current_school.academic_session %}<span class="badge-session">{{ current_school.academic_session }}</span>{% endif %}
+            {% if current_school and current_school.support_email %}
+            <a href="mailto:{{ current_school.support_email }}"><i data-lucide="life-buoy" aria-hidden="true"></i>{{ current_school.support_email }}</a>
             {% endif %}
         </div>
     </footer>
-
+    {% endif %}
 
     <script>
-        // Lucide icons initialization
-        lucide.createIcons();
-
-        // Mobile Sidebar Controller
-        const mobileToggle = document.getElementById('mobile-toggle');
-        const mobileClose = document.getElementById('mobile-close');
-        const overlay = document.getElementById('sidebar-overlay');
-        const sidebar = document.querySelector('.sidebar');
-
-        const toggleSidebar = (show) => {
-            if (!sidebar || !overlay) return;
-            if (show) {
-                sidebar.classList.add('active');
-                overlay.classList.add('active');
-                document.body.style.overflow = 'hidden'; // Prevent scrolling when menu is open
-            } else {
-                sidebar.classList.remove('active');
-                overlay.classList.remove('active');
-                document.body.style.overflow = '';
-            }
+        const setTheme = (theme) => {
+            document.documentElement.dataset.theme = theme;
+            localStorage.setItem('theme', theme);
+            document.querySelectorAll('[data-theme-toggle]').forEach(toggle => {
+                toggle.checked = theme === 'dark';
+                toggle.setAttribute('aria-checked', String(theme === 'dark'));
+            });
+            document.querySelectorAll('[data-theme-label]').forEach(label => {
+                label.textContent = theme === 'dark' ? 'Dark mode' : 'Light mode';
+            });
         };
 
-        if (mobileToggle) mobileToggle.addEventListener('click', () => toggleSidebar(true));
-        if (mobileClose) mobileClose.addEventListener('click', () => toggleSidebar(false));
-        if (overlay) overlay.addEventListener('click', () => toggleSidebar(false));
-    </script>
-</body>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) lucide.createIcons();
 
+            const loader = document.querySelector('.page-loading-bar');
+            const finishLoader = () => {
+                if (!loader) return;
+                loader.classList.add('is-complete');
+                window.setTimeout(() => loader.classList.remove('is-complete'), 260);
+            };
+            finishLoader();
+
+            document.querySelectorAll('a[href^="/"]:not([target])').forEach(link => {
+                link.addEventListener('click', event => {
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                    if (loader) loader.classList.remove('is-complete');
+                });
+            });
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', () => loader && loader.classList.remove('is-complete'));
+            });
+
+            const toggle = document.getElementById('mobile-toggle');
+            const close = document.getElementById('mobile-close');
+            const overlay = document.getElementById('sidebar-overlay');
+            const sidebar = document.getElementById('app-sidebar');
+            const toggleSidebar = (open) => {
+                if (!sidebar || !overlay) return;
+                sidebar.classList.toggle('is-open', open);
+                overlay.classList.toggle('is-visible', open);
+                document.body.classList.toggle('nav-open', open);
+                toggle?.setAttribute('aria-expanded', String(open));
+                if (open) close?.focus(); else toggle?.focus();
+            };
+            toggle?.addEventListener('click', () => toggleSidebar(true));
+            close?.addEventListener('click', () => toggleSidebar(false));
+            overlay?.addEventListener('click', () => toggleSidebar(false));
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && sidebar?.classList.contains('is-open')) toggleSidebar(false);
+            });
+            sidebar?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => toggleSidebar(false)));
+
+            document.querySelectorAll('[data-theme-toggle]').forEach(toggle => {
+                toggle.checked = document.documentElement.dataset.theme === 'dark';
+                toggle.setAttribute('aria-checked', String(toggle.checked));
+                toggle.addEventListener('change', () => setTheme(toggle.checked ? 'dark' : 'light'));
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
 </html>

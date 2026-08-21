@@ -1,137 +1,16 @@
 {% extends "base.html" %}
 
-
+{% block page_title %}Attendance — Student OS{% endblock %}
 {% block content %}
 <div class="dashboard-layout">
     {% include "sidebar.html" %}
-
     <main class="main-content">
-        <div class="header">
-            <div>
-                <span class="header-pretitle">Operational Records</span>
-                <h1 class="header-title">Attendance</h1>
-            </div>
-        </div>
-
+        <header class="page-header"><div><span class="page-eyebrow">Consistency</span><h1 class="page-title">Attendance</h1><p>See the record as it is, then use it to decide what support or follow-up is needed.</p></div></header>
+        {% if user.role == 'student' %}<section class="progress-intro card"><span class="header-pretitle">Your record</span><h2>Showing up is part of the work.</h2><p>These entries are saved attendance records. Present, absent, and late are kept distinct so the pattern stays understandable.</p></section>{% endif %}
         {% if user.role == 'teacher' %}
-        <div class="stat-card" style="margin-bottom: 2.5rem;">
-            <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; font-size: 1.25rem;">
-                <i data-lucide="check-square" class="text-primary" style="color: var(--primary-color);"></i>
-                Mark Daily Attendance
-            </h3>
-            <form method="POST"
-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; align-items: end;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                <div class="form-group-premium" style="margin: 0;">
-                    <label class="form-label-premium">
-                        <i data-lucide="user"></i> Student
-                    </label>
-                    <div class="input-wrapper-premium">
-                        <select name="student_id" class="form-input-premium" required>
-                            {% for student in students %}
-                            <option value="{{ student.id }}">{{ student.username }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group-premium" style="margin: 0;">
-                    <label class="form-label-premium">
-                        <i data-lucide="book-open"></i> Course
-                    </label>
-                    <div class="input-wrapper-premium">
-                        <select name="course_id" class="form-input-premium" required>
-                            {% for course in courses %}
-                            <option value="{{ course.id }}">{{ course.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group-premium" style="margin: 0;">
-                    <label class="form-label-premium">
-                        <i data-lucide="calendar"></i> Session Date
-                    </label>
-                    <div class="input-wrapper-premium">
-                        <input type="date" name="date" class="form-input-premium" required>
-                    </div>
-                </div>
-
-                <div class="form-group-premium" style="margin: 0;">
-                    <label class="form-label-premium">
-                        <i data-lucide="activity"></i> Status
-                    </label>
-                    <div class="input-wrapper-premium">
-                        <select name="status" class="form-input-premium" required>
-                            <option value="Present">Present</option>
-                            <option value="Absent">Absent</option>
-                            <option value="Late">Late</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-primary" style="height: 50px; width: 100%; border-radius: 0.75rem;">
-                    Update Log
-                </button>
-            </form>
-        </div>
+        <section class="form-section attendance-entry-section"><div class="section-heading-row"><div><span class="header-pretitle">Record evidence</span><h2>Mark daily attendance</h2></div><span class="mono-tag">Saved to the attendance log</span></div><form method="POST" class="form-grid"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="form-group"><label for="attendance_student">Student</label><select id="attendance_student" name="student_id" required>{% for student in students %}<option value="{{ student.id }}">{{ student.username }}</option>{% endfor %}</select></div><div class="form-group"><label for="attendance_course">Course</label><select id="attendance_course" name="course_id" required>{% for course in courses %}<option value="{{ course.id }}">{{ course.name }}</option>{% endfor %}</select></div><div class="form-group"><label for="attendance_date">Session date</label><input id="attendance_date" type="date" name="date" required></div><div class="form-group"><label for="attendance_status">Status</label><select id="attendance_status" name="status" required><option value="Present">Present</option><option value="Absent">Absent</option><option value="Late">Late</option></select></div><div class="form-actions"><button type="submit" class="btn btn-primary"><i data-lucide="save" aria-hidden="true"></i>Save attendance</button></div></form></section>
         {% endif %}
-
-        <div class="stat-card attendance-table-card"
-            style="padding: 0; overflow: hidden; border: none; background: transparent; box-shadow: none;">
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Course</th>
-                            {% if user.role == 'teacher' %}
-                            <th>Student</th>
-                            {% endif %}
-                            <th style="text-align: right;">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for record in attendance %}
-                        <tr class="staggered-entry" style="transition: background 0.2s;">
-                            <td class="text-muted" style="font-weight: 600;">{{ record.date | pretty_date }}</td>
-                            <td>
-                                <div style="font-weight: 700; color: var(--text-main);">{{ record.course_name }}</div>
-                            </td>
-                            {% if user.role == 'teacher' %}
-                            <td>
-                                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                    <div class="avatar-sm" style="width: 28px; height: 28px; font-size: 0.75rem;">
-                                        {{ record.student_name[0] | upper }}
-                                    </div>
-                                    <span>{{ record.student_name }}</span>
-                                </div>
-                            </td>
-                            {% endif %}
-                            <td style="text-align: right;">
-                                {% if record.status == 'Present' %}
-                                <span class="badge badge-success">Present</span>
-                                {% elif record.status == 'Absent' %}
-                                <span class="badge badge-error">Absent</span>
-                                {% else %}
-                                <span class="badge badge-warning">Late</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="4" style="padding: 4rem 2rem; text-align: center; color: var(--text-muted);">
-                                <i data-lucide="calendar-off" width="48" height="48"
-                                    style="margin-bottom: 1rem; opacity: 0.2; color: var(--text-muted);"></i>
-                                <p>No attendance logs found.</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <section class="table-section attendance-table-card"><div class="section-heading-row"><div><span class="header-pretitle">Saved history</span><h2>{% if user.role == 'teacher' %}Recent attendance{% else %}Your attendance history{% endif %}</h2></div></div><div class="table-container"><table><thead><tr><th>Date</th><th>Course</th>{% if user.role == 'teacher' %}<th>Student</th>{% endif %}<th>Status</th></tr></thead><tbody>{% for record in attendance %}<tr><td>{{ record.date | pretty_date }}</td><td><strong>{{ record.course_name }}</strong></td>{% if user.role == 'teacher' %}<td><span class="inline-person"><span class="avatar avatar-sm">{{ (record.student_name or 'U')[0]|upper }}</span>{{ record.student_name }}</span></td>{% endif %}<td>{% if record.status == 'Present' %}<span class="badge badge-success">Present</span>{% elif record.status == 'Absent' %}<span class="badge badge-error">Absent</span>{% else %}<span class="badge badge-warning">Late</span>{% endif %}</td></tr>{% else %}<tr><td colspan="4"><div class="empty-table-state"><span class="empty-icon"><i data-lucide="calendar-off" aria-hidden="true"></i></span><h3>No attendance records yet</h3><p>Saved attendance entries will appear here with their course and status.</p></div></td></tr>{% endfor %}</tbody></table></div></section>
     </main>
 </div>
 {% endblock %}
