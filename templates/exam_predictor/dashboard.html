@@ -7,17 +7,17 @@
     <main class="main-content">
         <div class="header">
             <div>
-                <span class="header-pretitle">Study planner</span>
-                <h1 class="header-title">Study planner</h1>
+                <span class="header-pretitle">AI Analysis Center</span>
+                <h1 class="header-title">AI Exam Predictor</h1>
                 <p style="color: var(--text-muted); margin-top: 0.75rem; font-weight: 500;">
-                    Upload your source material to create transparent, heuristic study guidance.
+                    Upload your past papers and syllabus to generate data-driven exam insights.
                 </p>
             </div>
             <div class="user-pill staggered-entry">
                 <div class="avatar-sm">
                     <i data-lucide="brain-circuit" width="18"></i>
                 </div>
-                <span style="font-weight: 700; color: var(--primary-color);">Heuristic analysis</span>
+                <span style="font-weight: 700; color: var(--primary-color);">AI Active</span>
             </div>
         </div>
 
@@ -64,7 +64,7 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-weight: 700;">
-                        <i data-lucide="upload-cloud" width="18" style="margin-right: 0.5rem;"></i> Analyze source files
+                        <i data-lucide="upload-cloud" width="18" style="margin-right: 0.5rem;"></i> Start AI Analysis
                     </button>
                 </form>
 
@@ -86,7 +86,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h3>Topic Probability Intelligence</h3>
                     <div style="font-size: 0.75rem; background: var(--primary-light); color: var(--primary-color); padding: 0.25rem 0.75rem; border-radius: 1rem; font-weight: 700;">
-                        Heuristic summary
+                        10-Year Weighted Analysis
                     </div>
                 </div>
                 
@@ -142,7 +142,7 @@
             <!-- Predicted Questions -->
             <div class="stat-card">
                 <h3>Predicted Board Questions</h3>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Generated practice examples based on the source material you uploaded.</p>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">AI-generated likely questions based on historical repetition.</p>
                 
                 {% if not questions %}
                 <p style="text-align: center; padding: 2rem; color: var(--text-muted);">No questions generated.</p>
@@ -163,8 +163,8 @@
 
             <!-- Revision Planner -->
             <div class="stat-card">
-                <h3>Revision roadmap</h3>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">A generated schedule based on the stored topic analysis. Review it before relying on it.</p>
+                <h3>Smart Revision Roadmap</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Optimized schedule based on topic importance.</p>
                 
                 {% if not revision_plan %}
                 <p style="text-align: center; padding: 2rem; color: var(--text-muted);">Upload docs to generate a plan.</p>

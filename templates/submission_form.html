@@ -1,28 +1,103 @@
 {% extends "base.html" %}
 
-{% block page_title %}Submit work — Student OS{% endblock %}
 {% block content %}
-<div class="dashboard-layout">
-    {% include "sidebar.html" %}
-    <main class="main-content">
-        <a class="back-link" href="{{ url_for('courses.course_details', course_id=assignment.course_id) }}"><i data-lucide="arrow-left" aria-hidden="true"></i>Back to course</a>
-        <header class="page-header"><div><span class="page-eyebrow">Turn in work</span><h1 class="page-title">{{ assignment.title }}</h1><p>Submit your work for review. Check the brief and due date before sending.</p></div></header>
-        <div class="submission-layout">
-            <section class="form-section">
-                <div class="assignment-context"><span class="header-pretitle">Assignment brief</span><h2>{{ assignment.title }}</h2>{% if assignment.description %}<div class="assignment-description">{{ assignment.description|safe }}</div>{% else %}<p class="muted-copy">No additional brief was provided.</p>{% endif %}{% if assignment.attachment_path %}<a class="text-link" href="{{ url_for('academic.uploaded_file', filename=assignment.attachment_path) }}" target="_blank" rel="noopener"><i data-lucide="download" aria-hidden="true"></i>Download course attachment</a>{% endif %}{% if assignment.due_date %}<div class="context-meta"><span><i data-lucide="calendar-clock" aria-hidden="true"></i>Due {{ assignment.due_date }}</span></div>{% endif %}</div>
-                {% if submission %}
-                <div class="submission-confirmation"><span class="confirmation-icon"><i data-lucide="check-circle-2" aria-hidden="true"></i></span><div><span class="header-pretitle">Saved submission</span><h2>Your work is with your teacher.</h2><p>Submitted on {{ submission.submission_date }}. You can return to the course to review the next step.</p></div>{% if submission.content %}<div class="submitted-content"><span class="header-pretitle">Your response</span><div>{{ submission.content|safe }}</div></div>{% endif %}{% if submission.attachment_path %}<a class="text-link" href="{{ url_for('academic.uploaded_file', filename=submission.attachment_path) }}" target="_blank" rel="noopener"><i data-lucide="paperclip" aria-hidden="true"></i>Open submitted attachment</a>{% endif %}<a class="btn btn-primary" href="{{ url_for('courses.course_details', course_id=assignment.course_id) }}">Back to course</a></div>
-                {% else %}
-                <form method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="form-group"><label for="content">Your response</label><textarea id="content" name="content" placeholder="Write a note or paste your response here."></textarea></div>
-                    <div class="form-group"><label for="attachment">Attachment <span class="field-hint">Optional</span></label><input id="attachment" type="file" name="attachment" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"><small class="field-help">Choose a file that supports your submission. The server will validate the upload before saving it.</small></div>
-                    <div class="form-actions"><a href="{{ url_for('courses.course_details', course_id=assignment.course_id) }}" class="btn btn-secondary">Cancel</a><button type="submit" class="btn btn-primary"><i data-lucide="send" aria-hidden="true"></i>Submit work</button></div>
-                </form>
-                {% endif %}
-            </section>
-            <aside class="card guidance-card"><span class="header-pretitle">Before you submit</span><h2>Make the handoff clear.</h2><p>Include enough context for your teacher to understand what you changed, what you are unsure about, and where the attached file belongs.</p><ul class="quiet-list"><li><i data-lucide="check" aria-hidden="true"></i>Check the course and assignment title.</li><li><i data-lucide="check" aria-hidden="true"></i>Keep your response concise and specific.</li><li><i data-lucide="check" aria-hidden="true"></i>Wait for the confirmation message.</li></ul></aside>
+<div class="auth-container" style="background: var(--bg-color); min-height: calc(100vh - 60px);">
+    <div class="auth-card" style="max-width: 800px;">
+        <div class="auth-header">
+            <h1>Submit Assignment</h1>
+            <p>{{ assignment.title }}</p>
         </div>
-    </main>
+
+        <div
+            style="background: var(--bg-color); padding: 1rem; border-radius: 0.5rem; margin-bottom: 2rem; border: 1px solid var(--border-color);">
+            <h5>Description</h5>
+            <div style="margin-top: 0.5rem;">{{ assignment.description | safe }}</div>
+            {% if assignment.attachment_path %}
+            <div style="margin-top: 1rem;">
+                <a href="{{ url_for('academic.uploaded_file', filename=assignment.attachment_path) }}" target="_blank"
+                    style="color: var(--primary-color); text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                    <i data-lucide="download" width="16"></i> Download Attachment
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if submission %}
+        <!-- Success State: Use primary color tint or success color tint if defined, or just card bg with success border -->
+        <div
+            style="background: rgba(16, 185, 129, 0.1); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--success-color);">
+            <div
+                style="color: var(--success-color); font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="check-circle" width="20"></i> Assignment Submitted
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <strong>Your Answer:</strong>
+                <div
+                    style="background: var(--card-bg); padding: 1rem; border-radius: 0.5rem; margin-top: 0.5rem; border: 1px solid var(--border-color);">
+                    {{ submission.content | safe }}
+                </div>
+            </div>
+            {% if submission.attachment_path %}
+            <div style="margin-bottom: 1rem;">
+                <strong>Attachment:</strong>
+                <a href="{{ url_for('academic.uploaded_file', filename=submission.attachment_path) }}" target="_blank"
+                    style="color: var(--primary-color); margin-left: 0.5rem;">Download File</a>
+            </div>
+            {% endif %}
+            <div style="font-size: 0.875rem; color: var(--text-muted);">
+                Submitted on: {{ submission.submission_date }}
+            </div>
+            <div style="margin-top: 2rem;">
+                <a href="{{ url_for('courses.course_details', course_id=assignment.course_id) }}" class="btn-primary"
+                    style="display: inline-block; width: auto; text-decoration: none;">Back to Course</a>
+            </div>
+        </div>
+        {% else %}
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label class="form-label">Your Answer</label>
+                <!-- Quill Editor Container -->
+                <div id="editor" style="height: 200px; background: var(--card-bg); color: var(--text-main);"></div>
+                <input type="hidden" name="content" id="content">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Attach File (Optional)</label>
+                <input type="file" name="attachment" class="form-input" accept=".pdf,.doc,.docx,.txt,.png,.jpg">
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button type="submit" class="btn-primary">Submit Assignment</button>
+                <a href="{{ url_for('courses.course_details', course_id=assignment.course_id) }}" class="btn-primary"
+                    style="background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); text-align: center; text-decoration: none;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+        {% endif %}
+    </div>
 </div>
+
+<!-- Quill Library -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script>
+    var quill = new Quill('#editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                ['link']
+            ]
+        }
+    });
+
+    // Sync Quill content to hidden input
+    document.querySelector('form').onsubmit = function () {
+        var content = document.querySelector('input[name=content]');
+        content.value = quill.root.innerHTML;
+    };
+</script>
 {% endblock %}

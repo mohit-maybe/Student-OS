@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from datetime import timedelta
-import secrets
 from flask import Flask, redirect, url_for, render_template
 from flask_login import LoginManager, current_user
 from models import User
@@ -28,7 +27,7 @@ from flask import session, request
 from extensions import mail, babel, csrf, login_manager
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY') or secrets.token_hex(32)
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['DATABASE'] = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'student_os.db')
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
