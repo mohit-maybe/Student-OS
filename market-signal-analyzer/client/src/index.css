@@ -1,0 +1,62 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(0.105 0.004 145);
+  --foreground: oklch(0.965 0.008 105);
+  --card: oklch(0.135 0.006 145);
+  --card-foreground: oklch(0.965 0.008 105);
+  --popover: oklch(0.135 0.006 145);
+  --popover-foreground: oklch(0.965 0.008 105);
+  --primary: oklch(0.84 0.175 124);
+  --primary-foreground: oklch(0.14 0.01 145);
+  --secondary: oklch(0.19 0.008 145);
+  --secondary-foreground: oklch(0.94 0.01 105);
+  --muted: oklch(0.19 0.008 145);
+  --muted-foreground: oklch(0.67 0.015 120);
+  --accent: oklch(0.19 0.008 145);
+  --accent-foreground: oklch(0.94 0.01 105);
+  --destructive: oklch(0.65 0.2 25);
+  --border: oklch(0.27 0.009 140);
+  --input: oklch(0.21 0.008 145);
+  --ring: oklch(0.84 0.175 124);
+  --radius: 0.85rem;
+}
+
+* { border-color: var(--border); }
+html { background: #070807; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  min-width: 320px;
+  color: #f4f5ec;
+  background: #070807;
+  font-family: "Manrope", sans-serif;
+  font-weight: 500;
+}
+button, input { font: inherit; }
+::selection { background: #d9fb63; color: #10120d; }
+
+.mono { font-family: "DM Mono", monospace; }
+.serif { font-family: "Playfair Display", serif; }
+.noise-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: .045;
+  z-index: 50;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.75'/%3E%3C/svg%3E");
+}
+.grid-backdrop {
+  background-image: linear-gradient(rgba(217,251,99,.042) 1px, transparent 1px), linear-gradient(90deg, rgba(217,251,99,.042) 1px, transparent 1px);
+  background-size: 38px 38px;
+}
+.type-cursor::after { content: "_"; color: #d9fb63; margin-left: 4px; animation: blink .9s step-end infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .signal-pulse { animation: pulse 2.8s ease-in-out infinite; }
+  .slow-drift { animation: drift 12s ease-in-out infinite alternate; }
+  @keyframes pulse { 50% { opacity: .43; transform: scale(.96); } }
+  @keyframes drift { to { transform: translate3d(-1.5%, 1.25%, 0) scale(1.025); } }
+}
