@@ -21,4 +21,4 @@
 - [x] Add a trade-learning workspace that summarizes completed paper trades, explains win/loss drivers, cites underlying sources, and surfaces reviewable mistakes without auto-mutating strategy rules.
 - [x] Replace the dashboard hero artwork with the user-supplied global-network image and refine the learning-oriented visual hierarchy.
 - [x] Add tests for immutable decision-time summaries, P&L calculations, error classification, and lesson-review controls.
-- [ ] Verify and push the AI-learning refinement to GitHub.
+- [x] Verify and push the AI-learning refinement to GitHub.
