@@ -1,27 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=DM+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #f7f8fa;
-  --foreground: #17191c;
-  --muted: #6b7280;
-  --border: #e5e7eb;
+  --background: #f6f7f9;
+  --foreground: #111827;
+  --muted: #667085;
+  --border: #e4e7ec;
   --surface: #ffffff;
-  --accent: #2563eb;
+  --accent: #3157d5;
+  --accent-soft: #eef2ff;
+  --success: #147d64;
 }
 
 * { box-sizing: border-box; }
-
-html { min-height: 100%; }
-
+html { min-height: 100%; scroll-behavior: smooth; }
 body {
   min-height: 100vh;
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-
 button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+::selection { background: #dbe4ff; color: #172554; }
 
-::selection { background: #dbeafe; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes float-in { from { opacity: 0; transform: translateY(24px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes ink-write { from { width: 0; opacity: .15; } to { width: 100%; opacity: 1; } }
+@keyframes ink-cursor { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+
+.animate-fade-up { animation: fade-up .7s cubic-bezier(.22,1,.36,1) both; }
+.animate-float-in { animation: float-in .8s cubic-bezier(.22,1,.36,1) both; }
+.handwritten {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: 'Caveat', cursive;
+  font-weight: 600;
+  line-height: .9;
+  animation: ink-write 1.9s cubic-bezier(.65,0,.35,1) .25s both;
+}
+.handwritten::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 10%;
+  width: 2px;
+  height: 80%;
+  background: currentColor;
+  animation: ink-cursor .55s ease-in-out .25s 4;
+}
+.stagger-1 { animation-delay: .15s; }
+.stagger-2 { animation-delay: .25s; }
+.stagger-3 { animation-delay: .35s; }
+.stagger-4 { animation-delay: .45s; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+}
