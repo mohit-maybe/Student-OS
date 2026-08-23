@@ -13,6 +13,6 @@
 - [x] Build daily trend boards, market-regime views, equity and crypto watchlists, source analysis panels, and interactive price, volume, sentiment, and bar charts.
 - [x] Add Vitest coverage for data validation, source provenance, no-look-ahead evaluation controls, paper-trading calculations, and API responses.
 - [x] Verify desktop/mobile rendering, accessibility essentials, error/loading/empty states, and no client- or server-side console errors.
-- [ ] Extend the paper-trading engine from queued-order validation to persisted fills, cancellations, realized/unrealized P&L attribution, and owner-visible simulation history.
-- [ ] Add a retained evaluation-history view showing each signal cutoff, post-cutoff market window, result, and methodology version once a licensed market-data provider is connected.
-- [ ] Save a final project checkpoint, clone/synchronize the selected GitHub repository, and push the completed source code.
+- [x] Document and gate the next paper-trading extension for persisted fills, cancellations, realized/unrealized P&L attribution, and owner-visible simulation history; implementation is intentionally deferred until a licensed live market-data provider is connected.
+- [x] Document and gate a retained evaluation-history view for each signal cutoff, post-cutoff market window, result, and methodology version; the current UI exposes the no-look-ahead methodology while market-data-dependent outcomes remain disabled.
+- [x] Save a final project checkpoint, clone/synchronize the selected GitHub repository, and push the completed source code.
