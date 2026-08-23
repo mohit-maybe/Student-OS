@@ -3,8 +3,9 @@ import { z } from "zod";
 import { getAirtableStatus, syncNewsToAirtable } from "../airtable";
 import { invokeLLM } from "../_core/llm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
-import { listRetainedNews, retainNewsItems } from "../db";
+import { createTradeLearningRecord, listRetainedNews, listTradeLearningRecords, retainNewsItems } from "../db";
 import { computeOutcome, fetchGdeltNews, paperOrderCost, paperPortfolioFixture, type SignalDirection } from "../marketCore";
+import { calculateTradePnl, demoTradeLearning, errorCategories, validateLearningRecord } from "../tradeLearning";
 
 const analysisSchema = {
   name: "evidence_linked_market_hypothesis",
@@ -99,4 +100,36 @@ export const marketRouter = router({
     ...paperPortfolioFixture,
     label: "Illustrative simulation data — connect a market-data provider and create paper orders to begin evidence-based evaluation.",
   })),
+
+  tradeLearningPreview: publicProcedure.query(() => ({
+    records: demoTradeLearning,
+    calibration: { confidenceBucket: "50–70%", outcomes: { wins: 1, losses: 1 }, sampleSize: 2, status: "insufficient_sample" as const },
+    notice: "Preview records demonstrate the learning contract. They do not train, modify, or execute a strategy automatically.",
+  })),
+
+  tradeLearningHistory: protectedProcedure.query(async ({ ctx }) => ({
+    records: (await listTradeLearningRecords(ctx.user.id)).map(record => ({
+      id: `learning-${record.id}`,
+      symbol: record.symbol,
+      side: record.side,
+      netPnl: Number(record.netPnl),
+      outcome: record.outcome,
+      decisionAt: record.decisionAt,
+      evaluatedAt: record.evaluatedAt,
+      sources: Array.isArray(record.sourceUrls) ? record.sourceUrls.filter((value): value is string => typeof value === "string") : [],
+      errorCategory: record.errorCategory,
+      lesson: record.lesson,
+      status: record.learningStatus,
+    })),
+    notice: "Durable learning records preserve their original decision timestamp, sources, P&L, and pending-review lesson state.",
+  })),
+
+  summarizePaperTrade: protectedProcedure
+    .input(z.object({ symbol: z.string().min(1).max(16).transform(value => value.toUpperCase()), side: z.enum(["long", "short"]), entryPrice: z.number().positive(), exitPrice: z.number().positive(), quantity: z.number().positive(), fees: z.number().nonnegative().default(0), decisionAt: z.date(), evaluatedAt: z.date(), sourceUrls: z.array(z.string().url()).min(1).max(12), rationale: z.string().min(12).max(1500), errorCategory: z.enum(errorCategories), lesson: z.string().min(12).max(1000) }))
+    .mutation(async ({ input, ctx }) => {
+      const pnl = calculateTradePnl(input);
+      const learning = validateLearningRecord(input);
+      const id = await createTradeLearningRecord({ userId: ctx.user.id, symbol: input.symbol, side: input.side, entryPrice: input.entryPrice, exitPrice: input.exitPrice, quantity: input.quantity, fees: input.fees, ...pnl, decisionAt: input.decisionAt, evaluatedAt: input.evaluatedAt, sourceUrls: input.sourceUrls, rationale: input.rationale, errorCategory: input.errorCategory, lesson: input.lesson, modelVersion: "paper-learning-v1" });
+      return { id, symbol: input.symbol, ...pnl, decisionAt: input.decisionAt, evaluatedAt: input.evaluatedAt, sourceUrls: input.sourceUrls, rationale: input.rationale, ...learning, strategyMutation: "disabled" as const };
+    }),
 });

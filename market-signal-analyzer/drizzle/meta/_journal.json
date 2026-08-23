@@ -15,6 +15,20 @@
       "when": 1787451356021,
       "tag": "0001_naive_steel_serpent",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787452450455,
+      "tag": "0002_familiar_the_professor",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1787452557505,
+      "tag": "0003_bouncy_iron_monger",
+      "breakpoints": true
     }
   ]
 }

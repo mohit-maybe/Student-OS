@@ -16,3 +16,9 @@
 - [x] Document and gate the next paper-trading extension for persisted fills, cancellations, realized/unrealized P&L attribution, and owner-visible simulation history; implementation is intentionally deferred until a licensed live market-data provider is connected.
 - [x] Document and gate a retained evaluation-history view for each signal cutoff, post-cutoff market window, result, and methodology version; the current UI exposes the no-look-ahead methodology while market-data-dependent outcomes remain disabled.
 - [x] Save a final project checkpoint, clone/synchronize the selected GitHub repository, and push the completed source code.
+- [x] Add research-backed AI-finance learning controls based on point-in-time evidence, calibration, regime segmentation, and human-approved lessons.
+- [x] Add durable paper-trade summary records linking P&L, trade rationale, sources, outcome timing, error taxonomy, and reusable lessons.
+- [x] Add a trade-learning workspace that summarizes completed paper trades, explains win/loss drivers, cites underlying sources, and surfaces reviewable mistakes without auto-mutating strategy rules.
+- [x] Replace the dashboard hero artwork with the user-supplied global-network image and refine the learning-oriented visual hierarchy.
+- [x] Add tests for immutable decision-time summaries, P&L calculations, error classification, and lesson-review controls.
+- [ ] Verify and push the AI-learning refinement to GitHub.

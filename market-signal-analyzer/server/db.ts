@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, newsItems, users } from "../drizzle/schema";
+import { InsertUser, newsItems, tradeLearningRecords, users } from "../drizzle/schema";
 import type { NormalizedNewsItem } from "./marketCore";
 import { ENV } from './_core/env';
 
@@ -127,6 +127,32 @@ export async function listRetainedNews(limit = 12) {
     acquiredAt: newsItems.acquiredAt,
     contentFingerprint: newsItems.contentFingerprint,
   }).from(newsItems).orderBy(desc(newsItems.acquiredAt)).limit(limit);
+}
+
+export async function createTradeLearningRecord(input: {
+  userId: number; symbol: string; side: "long" | "short"; entryPrice: number; exitPrice: number; quantity: number; fees: number;
+  grossPnl: number; netPnl: number; outcome: "win" | "loss" | "flat"; decisionAt: Date; evaluatedAt: Date; sourceUrls: string[];
+  rationale: string; errorCategory: string; lesson: string; modelVersion: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable for durable trade learning.");
+  const values = {
+    ...input,
+    entryPrice: input.entryPrice.toString(),
+    exitPrice: input.exitPrice.toString(),
+    quantity: input.quantity.toString(),
+    fees: input.fees.toString(),
+    grossPnl: input.grossPnl.toString(),
+    netPnl: input.netPnl.toString(),
+  };
+  const result = await db.insert(tradeLearningRecords).values(values);
+  return Number(result[0].insertId);
+}
+
+export async function listTradeLearningRecords(userId: number, limit = 24) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(tradeLearningRecords).where(eq(tradeLearningRecords.userId, userId)).orderBy(desc(tradeLearningRecords.evaluatedAt)).limit(limit);
 }
 
 // TODO: add feature queries here as your product grows.

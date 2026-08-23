@@ -173,5 +173,35 @@ export const auditEvents = mysqlTable(
   table => [index("auditEvents_entity_idx").on(table.entityType, table.entityId)]
 );
 
+export const tradeLearningRecords = mysqlTable(
+  "tradeLearningRecords",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    accountId: int("accountId"),
+    orderId: int("orderId"),
+    signalId: int("signalId"),
+    symbol: varchar("symbol", { length: 32 }).notNull(),
+    side: mysqlEnum("side", ["long", "short"]).notNull(),
+    entryPrice: decimal("entryPrice", { precision: 18, scale: 6 }).notNull(),
+    exitPrice: decimal("exitPrice", { precision: 18, scale: 6 }).notNull(),
+    quantity: decimal("quantity", { precision: 18, scale: 6 }).notNull(),
+    fees: decimal("fees", { precision: 18, scale: 6 }).notNull(),
+    grossPnl: decimal("grossPnl", { precision: 18, scale: 6 }).notNull(),
+    netPnl: decimal("netPnl", { precision: 18, scale: 6 }).notNull(),
+    outcome: mysqlEnum("outcome", ["win", "loss", "flat"]).notNull(),
+    decisionAt: timestamp("decisionAt").notNull(),
+    evaluatedAt: timestamp("evaluatedAt").notNull(),
+    sourceUrls: json("sourceUrls").notNull(),
+    rationale: text("rationale").notNull(),
+    errorCategory: varchar("errorCategory", { length: 64 }).notNull(),
+    lesson: text("lesson").notNull(),
+    learningStatus: mysqlEnum("learningStatus", ["pending_human_review", "approved", "rejected"]).default("pending_human_review").notNull(),
+    modelVersion: varchar("modelVersion", { length: 96 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("tradeLearningRecords_user_eval_idx").on(table.userId, table.evaluatedAt)]
+);
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
