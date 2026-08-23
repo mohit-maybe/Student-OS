@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Student OS",
-  description: "A calmer operating system for modern schools.",
+  title: "Student OS — School operations, simplified",
+  description: "A focused operating system for administrators, teachers and students.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
